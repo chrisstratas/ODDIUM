@@ -199,7 +199,7 @@ const NFL = () => {
           <div className="lg:col-span-3 order-1 lg:order-2">
             {/* NFL Insights */}
             <div className="mb-8">
-              <BettingInsights />
+              <BettingInsights sport="NFL" />
             </div>
 
             {/* NFL Player Analytics */}

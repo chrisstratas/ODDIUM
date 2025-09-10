@@ -236,7 +236,7 @@ const NHL = () => {
           <div className="lg:col-span-3 order-1 lg:order-2">
             {/* NHL Insights */}
             <div className="mb-8">
-              <BettingInsights />
+              <BettingInsights sport="NHL" />
             </div>
 
             {/* NHL Player Analytics */}

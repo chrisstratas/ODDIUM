@@ -236,7 +236,7 @@ const NBA = () => {
           <div className="lg:col-span-3 order-1 lg:order-2">
             {/* NBA Insights */}
             <div className="mb-8">
-              <BettingInsights />
+              <BettingInsights sport="NBA" />
             </div>
 
             {/* NBA Player Analytics */}
