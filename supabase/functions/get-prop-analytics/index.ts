@@ -5,6 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -17,11 +18,33 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { searchParams } = new URL(req.url);
-    
-    const sortBy = searchParams.get('sortBy') || 'value';
-    const category = searchParams.get('category') || 'all';
-    const confidence = searchParams.get('confidence') || 'all';
+
+    // Parse filters from URL or body
+    let sortBy = 'value';
+    let category = 'all';
+    let confidence = 'all';
+
+    try {
+      const { searchParams } = new URL(req.url);
+      sortBy = searchParams.get('sortBy') || sortBy;
+      category = searchParams.get('category') || category;
+      confidence = searchParams.get('confidence') || confidence;
+    } catch (_) {}
+
+    try {
+      const body = await req.json();
+      if (body) {
+        if (typeof body.sortBy === 'string') sortBy = body.sortBy;
+        if (typeof body.category === 'string') category = body.category;
+        if (typeof body.confidence === 'string') confidence = body.confidence;
+        if (typeof body.params === 'string') {
+          const p = new URLSearchParams(body.params);
+          sortBy = p.get('sortBy') || sortBy;
+          category = p.get('category') || category;
+          confidence = p.get('confidence') || confidence;
+        }
+      }
+    } catch (_) {}
 
     console.log('Fetching prop analytics with filters:', { sortBy, category, confidence });
 

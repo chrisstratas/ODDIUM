@@ -182,7 +182,11 @@ const Index = () => {
                 </Button>
               </div>
               {loading && <div className="text-center py-4">Loading live analytics...</div>}
-              {error && <div className="text-center py-4 text-destructive">Error: {error}</div>}
+              {error && (
+                <div className="text-center py-2 text-muted-foreground">
+                  Live analytics unavailable — showing fallback props.
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {displayProps.filter(prop => prop.valueRating === "high").map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
