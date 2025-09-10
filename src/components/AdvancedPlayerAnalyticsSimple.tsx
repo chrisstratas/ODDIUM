@@ -16,13 +16,13 @@ const AdvancedPlayerAnalytics = ({ sport }: AdvancedPlayerAnalyticsProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          {sport} Advanced Analytics
+          Advanced Analytics
         </CardTitle>
       </CardHeader>
       <CardContent>
         {/* Player Search */}
         <div className="mb-6">
-          <label className="text-sm font-medium mb-2 block">Search Player</label>
+          <label className="text-sm font-medium mb-2 block">Search {sport} Player</label>
           <PlayerNameInput 
             placeholder={`Search ${sport} players for advanced analytics...`}
             sport={sport}
