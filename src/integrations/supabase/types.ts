@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      parlay_picks: {
+        Row: {
+          bet_type: string
+          confidence: number
+          created_at: string
+          id: string
+          line: number
+          odds: string
+          parlay_id: string
+          player_name: string
+          prop_type: string
+          user_id: string
+        }
+        Insert: {
+          bet_type: string
+          confidence: number
+          created_at?: string
+          id?: string
+          line: number
+          odds: string
+          parlay_id: string
+          player_name: string
+          prop_type: string
+          user_id: string
+        }
+        Update: {
+          bet_type?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          line?: number
+          odds?: string
+          parlay_id?: string
+          player_name?: string
+          prop_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parlay_picks_parlay_id_fkey"
+            columns: ["parlay_id"]
+            isOneToOne: false
+            referencedRelation: "parlays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parlays: {
+        Row: {
+          average_confidence: number | null
+          created_at: string
+          game_info: Json
+          id: string
+          name: string
+          total_picks: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_confidence?: number | null
+          created_at?: string
+          game_info: Json
+          id?: string
+          name: string
+          total_picks?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_confidence?: number | null
+          created_at?: string
+          game_info?: Json
+          id?: string
+          name?: string
+          total_picks?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          preferred_sportsbook: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          preferred_sportsbook?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          preferred_sportsbook?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
