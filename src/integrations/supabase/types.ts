@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      live_odds: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          id: string
+          last_updated: string
+          line: number
+          over_odds: string
+          player_name: string
+          sportsbook: string
+          stat_type: string
+          team: string
+          under_odds: string
+          value_rating: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          last_updated?: string
+          line: number
+          over_odds: string
+          player_name: string
+          sportsbook: string
+          stat_type: string
+          team: string
+          under_odds: string
+          value_rating?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          last_updated?: string
+          line?: number
+          over_odds?: string
+          player_name?: string
+          sportsbook?: string
+          stat_type?: string
+          team?: string
+          under_odds?: string
+          value_rating?: string | null
+        }
+        Relationships: []
+      }
       parlay_picks: {
         Row: {
           bet_type: string
@@ -94,6 +139,45 @@ export type Database = {
         }
         Relationships: []
       }
+      player_stats: {
+        Row: {
+          created_at: string
+          game_date: string
+          id: string
+          player_name: string
+          season_year: number
+          source: string
+          stat_type: string
+          team: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          game_date: string
+          id?: string
+          player_name: string
+          season_year: number
+          source?: string
+          stat_type: string
+          team: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          game_date?: string
+          id?: string
+          player_name?: string
+          season_year?: number
+          source?: string
+          stat_type?: string
+          team?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -115,6 +199,45 @@ export type Database = {
           id?: string
           preferred_sportsbook?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      prop_analytics: {
+        Row: {
+          calculated_at: string
+          edge_percentage: number | null
+          hit_rate: number | null
+          id: string
+          player_name: string
+          recent_form: number | null
+          season_average: number | null
+          stat_type: string
+          team: string
+          trend_direction: string | null
+        }
+        Insert: {
+          calculated_at?: string
+          edge_percentage?: number | null
+          hit_rate?: number | null
+          id?: string
+          player_name: string
+          recent_form?: number | null
+          season_average?: number | null
+          stat_type: string
+          team: string
+          trend_direction?: string | null
+        }
+        Update: {
+          calculated_at?: string
+          edge_percentage?: number | null
+          hit_rate?: number | null
+          id?: string
+          player_name?: string
+          recent_form?: number | null
+          season_average?: number | null
+          stat_type?: string
+          team?: string
+          trend_direction?: string | null
         }
         Relationships: []
       }
