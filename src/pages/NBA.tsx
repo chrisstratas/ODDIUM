@@ -220,14 +220,15 @@ const NBA = () => {
           <div className="lg:col-span-1 order-2 lg:order-1">
             <div className="space-y-6">
               <ValueFilters onFiltersChange={setFilters} />
-              <SGPCategoryFilters 
-                onCategoryChange={(category) => setSgpFilters(prev => ({ ...prev, category }))}
-                onSortChange={(sortBy) => setSgpFilters(prev => ({ ...prev, sortBy }))}
-                onConfidenceChange={(confidence) => setSgpFilters(prev => ({ ...prev, confidence }))}
-                selectedCategory={sgpFilters.category}
-                selectedSort={sgpFilters.sortBy}
-                selectedConfidence={sgpFilters.confidence}
-              />
+                <SGPCategoryFilters
+                  sport="NBA"
+                  onCategoryChange={(category) => setSgpFilters(prev => ({ ...prev, category }))}
+                  onSortChange={(sortBy) => setSgpFilters(prev => ({ ...prev, sortBy }))}
+                  onConfidenceChange={(confidence) => setSgpFilters(prev => ({ ...prev, confidence }))}
+                  selectedCategory={sgpFilters.category}
+                  selectedSort={sgpFilters.sortBy}
+                  selectedConfidence={sgpFilters.confidence}
+                />
               <ParlayBuilder />
             </div>
           </div>

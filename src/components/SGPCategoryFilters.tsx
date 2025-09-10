@@ -11,6 +11,7 @@ interface SGPCategoryFiltersProps {
   selectedCategory: string;
   selectedSort: string;
   selectedConfidence: string;
+  sport: string;
 }
 
 const SGPCategoryFilters = ({
@@ -19,15 +20,60 @@ const SGPCategoryFilters = ({
   onConfidenceChange,
   selectedCategory,
   selectedSort,
-  selectedConfidence
+  selectedConfidence,
+  sport
 }: SGPCategoryFiltersProps) => {
-  const categories = [
-    { id: 'all', label: 'All Props', icon: Target },
-    { id: 'sgp-points', label: 'Points', icon: Activity },
-    { id: 'sgp-rebounds', label: 'Rebounds', icon: TrendingUp },
-    { id: 'sgp-assists', label: 'Assists', icon: Zap },
-    { id: 'sgp-threes', label: '3-Pointers', icon: Target }
-  ];
+  
+  const getSportCategories = (sport: string) => {
+    const baseCategory = { id: 'all', label: 'All Props', icon: Target };
+    
+    switch (sport) {
+      case 'NBA':
+        return [
+          baseCategory,
+          { id: 'sgp-points', label: 'Points', icon: Activity },
+          { id: 'sgp-rebounds', label: 'Rebounds', icon: TrendingUp },
+          { id: 'sgp-assists', label: 'Assists', icon: Zap },
+          { id: 'sgp-threes', label: '3-Pointers', icon: Target }
+        ];
+      case 'NFL':
+        return [
+          baseCategory,
+          { id: 'sgp-passing', label: 'Passing Yards', icon: Activity },
+          { id: 'sgp-rushing', label: 'Rushing Yards', icon: TrendingUp },
+          { id: 'sgp-receiving', label: 'Receiving Yards', icon: Zap },
+          { id: 'sgp-touchdowns', label: 'Touchdowns', icon: Target }
+        ];
+      case 'MLB':
+        return [
+          baseCategory,
+          { id: 'sgp-hits', label: 'Hits', icon: Activity },
+          { id: 'sgp-homeruns', label: 'Home Runs', icon: TrendingUp },
+          { id: 'sgp-rbis', label: 'RBIs', icon: Zap },
+          { id: 'sgp-strikeouts', label: 'Strikeouts', icon: Target }
+        ];
+      case 'NHL':
+        return [
+          baseCategory,
+          { id: 'sgp-goals', label: 'Goals', icon: Activity },
+          { id: 'sgp-assists', label: 'Assists', icon: TrendingUp },
+          { id: 'sgp-saves', label: 'Saves', icon: Zap },
+          { id: 'sgp-shots', label: 'Shots on Goal', icon: Target }
+        ];
+      case 'WNBA':
+        return [
+          baseCategory,
+          { id: 'sgp-points', label: 'Points', icon: Activity },
+          { id: 'sgp-rebounds', label: 'Rebounds', icon: TrendingUp },
+          { id: 'sgp-assists', label: 'Assists', icon: Zap },
+          { id: 'sgp-threes', label: '3-Pointers', icon: Target }
+        ];
+      default:
+        return [baseCategory];
+    }
+  };
+
+  const categories = getSportCategories(sport);
 
   const handleReset = () => {
     onCategoryChange('all');
@@ -38,7 +84,7 @@ const SGPCategoryFilters = ({
   return (
     <Card className="bg-gradient-card border-border">
       <CardHeader>
-        <CardTitle className="text-lg">SGP Categories</CardTitle>
+        <CardTitle className="text-lg">{sport} SGP Categories</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Category Selection */}
