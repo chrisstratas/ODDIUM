@@ -5,7 +5,7 @@ import BettingInsights from "@/components/BettingInsights";
 import ValueFilters from "@/components/ValueFilters";
 import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
-import AdvancedPlayerAnalytics from "@/components/AdvancedPlayerAnalyticsSimple";
+
 import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -239,10 +239,6 @@ const NHL = () => {
               <BettingInsights sport="NHL" />
             </div>
 
-            {/* NHL Player Analytics */}
-            <div className="mb-8">
-              <AdvancedPlayerAnalytics sport="NHL" />
-            </div>
 
             {/* High Value NHL Props */}
             <div className="mb-8">
