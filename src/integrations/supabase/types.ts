@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_codes: {
+        Row: {
+          code: string
+          created_at: string
+          current_uses: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+        }
+        Relationships: []
+      }
       live_odds: {
         Row: {
           confidence_score: number | null
@@ -301,12 +331,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_access: {
+        Row: {
+          access_code_id: string
+          activated_at: string
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          access_code_id: string
+          activated_at?: string
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          access_code_id?: string
+          activated_at?: string
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_access_access_code_id_fkey"
+            columns: ["access_code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_has_access: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
