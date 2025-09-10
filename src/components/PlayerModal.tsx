@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -61,6 +61,9 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
               <Badge variant="outline">{sport}</Badge>
             </div>
           </DialogTitle>
+          <DialogDescription>
+            Advanced analytics and performance insights for {playerName}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
