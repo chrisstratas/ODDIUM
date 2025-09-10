@@ -22,10 +22,10 @@ const AdvancedPlayerAnalytics = ({ sport }: AdvancedPlayerAnalyticsProps) => {
       <CardContent>
         {/* Player Search */}
         <div className="mb-6">
-          <label className="text-sm font-medium mb-2 block">Search {sport} Player</label>
+          <label className="text-sm font-medium mb-2 block">Search Player</label>
           <PlayerNameInput 
-            placeholder={`Search ${sport} players for advanced analytics...`}
-            sport={sport}
+            placeholder="Search players from NBA, NFL, MLB, NHL, WNBA..."
+            sport="All"
             value={selectedPlayer}
             onChange={setSelectedPlayer}
             onPlayerSelect={(player) => {
