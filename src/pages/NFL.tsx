@@ -233,6 +233,10 @@ const NFL = () => {
                   Live NFL analytics unavailable — showing sample props.
                 </div>
               )}
+              {/* Debug info */}
+              <div className="text-xs text-muted-foreground mb-2">
+                Debug: {displayProps.length} props available (Live: {liveProps.length}, Fallback: {nflFallbackProps.length})
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {displayProps.filter(prop => prop.valueRating === "high").map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
