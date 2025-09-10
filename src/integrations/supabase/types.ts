@@ -139,6 +139,60 @@ export type Database = {
         }
         Relationships: []
       }
+      player_matchups: {
+        Row: {
+          created_at: string
+          game_date: string
+          id: string
+          opponent_name: string
+          opponent_team: string
+          opponent_value: number
+          player_line: number | null
+          player_name: string
+          player_team: string
+          player_value: number
+          result: string | null
+          season_year: number
+          sport: string
+          stat_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          game_date: string
+          id?: string
+          opponent_name: string
+          opponent_team: string
+          opponent_value: number
+          player_line?: number | null
+          player_name: string
+          player_team: string
+          player_value: number
+          result?: string | null
+          season_year?: number
+          sport?: string
+          stat_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          game_date?: string
+          id?: string
+          opponent_name?: string
+          opponent_team?: string
+          opponent_value?: number
+          player_line?: number | null
+          player_name?: string
+          player_team?: string
+          player_value?: number
+          result?: string | null
+          season_year?: number
+          sport?: string
+          stat_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       player_stats: {
         Row: {
           created_at: string

@@ -5,12 +5,13 @@ import BettingInsights from "@/components/BettingInsights";
 import ValueFilters from "@/components/ValueFilters";
 import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
+import AdvancedPlayerAnalytics from "@/components/AdvancedPlayerAnalytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Database } from "lucide-react";
 import heroImage from "@/assets/hero-sports.jpg";
 
 const Index = () => {
@@ -29,6 +30,25 @@ const Index = () => {
   const { props: liveProps, loading, error, refetch } = useAnalytics(filters);
   const { props: sgpProps } = useAnalytics(sgpFilters);
   const [refreshing, setRefreshing] = useState(false);
+
+  const populateMatchupData = async () => {
+    setRefreshing(true);
+    try {
+      console.log('Populating matchup database...');
+      const response = await supabase.functions.invoke('populate-matchups');
+      
+      if (response.error) {
+        console.error('Error populating matchups:', response.error);
+        throw response.error;
+      }
+      
+      console.log('Matchup data populated successfully:', response.data);
+      setRefreshing(false);
+    } catch (err) {
+      console.error('Error:', err);
+      setRefreshing(false);
+    }
+  };
 
   const populateDatabase = async () => {
     setRefreshing(true);
@@ -197,6 +217,23 @@ const Index = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3 order-1 lg:order-2">
+            {/* Advanced Player Analytics */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">🎯 Advanced Player Analytics</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={populateMatchupData}
+                  disabled={refreshing}
+                >
+                  <Database className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Loading...' : 'Load Matchup Data'}
+                </Button>
+              </div>
+              <AdvancedPlayerAnalytics sport="NBA" />
+            </div>
+
             {/* Insights Section */}
             <div className="mb-8">
               <BettingInsights />
