@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Star, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Star, AlertTriangle, User } from "lucide-react";
+import PlayerModal from "./PlayerModal";
 
 interface PlayerPropCardProps {
   player: string;
@@ -34,8 +36,17 @@ const PlayerPropCard = ({
   seasonAvg,
   hitRate
 }: PlayerPropCardProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const isPositiveOver = !overOdds.startsWith("-");
   const isPositiveUnder = !underOdds.startsWith("-");
+
+  // Determine sport based on stat type (simple heuristic)
+  const getSport = () => {
+    if (stat.includes("Passing") || stat.includes("Rushing") || stat.includes("Receiving")) return "NFL";
+    if (stat.includes("Strikeouts") || stat.includes("Hits") || stat.includes("Home")) return "MLB";
+    if (stat.includes("Goals") || stat.includes("Saves") || (stat.includes("Assists") && team.includes("Rangers"))) return "NHL";
+    return "NBA";
+  };
 
   const getValueColor = () => {
     switch (valueRating) {
@@ -55,91 +66,107 @@ const PlayerPropCard = ({
   };
 
   return (
-    <Card className="bg-gradient-card border-border shadow-card hover:shadow-glow transition-all duration-300 hover:scale-[1.02]">
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-foreground">{player}</h3>
-              {isPopular && (
-                <Badge variant="secondary" className="bg-accent text-accent-foreground">
-                  Popular
-                </Badge>
-              )}
-              {valueRating && (
-                <Badge className={`${getValueColor()} flex items-center gap-1`}>
-                  {getValueIcon()}
-                  {valueRating.toUpperCase()} VALUE
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">{team}</p>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            {trend && (
-              <div className="flex items-center">
-                {trend === "up" ? (
-                  <TrendingUp className="w-4 h-4 text-positive-odds" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-negative-odds" />
+    <>
+      <Card className="bg-gradient-card border-border shadow-card hover:shadow-glow transition-all duration-300 hover:scale-[1.02]">
+        <CardContent className="p-4">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <button 
+                  className="font-semibold text-foreground hover:text-primary transition-colors cursor-pointer flex items-center gap-1"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  <User className="w-4 h-4" />
+                  {player}
+                </button>
+                {isPopular && (
+                  <Badge variant="secondary" className="bg-accent text-accent-foreground">
+                    Popular
+                  </Badge>
+                )}
+                {valueRating && (
+                  <Badge className={`${getValueColor()} flex items-center gap-1`}>
+                    {getValueIcon()}
+                    {valueRating.toUpperCase()} VALUE
+                  </Badge>
                 )}
               </div>
+              <p className="text-sm text-muted-foreground">{team}</p>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              {trend && (
+                <div className="flex items-center">
+                  {trend === "up" ? (
+                    <TrendingUp className="w-4 h-4 text-positive-odds" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-negative-odds" />
+                  )}
+                </div>
+              )}
+              {confidence && (
+                <Badge variant="outline" className="text-xs">
+                  {confidence}%
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-sm text-muted-foreground">{stat}</p>
+              {seasonAvg && (
+                <p className="text-xs text-muted-foreground">Avg: {seasonAvg}</p>
+              )}
+            </div>
+            <p className="text-lg font-bold text-foreground">{line}</p>
+            {recentForm && (
+              <p className="text-xs text-muted-foreground mt-1">L5: {recentForm}</p>
             )}
-            {confidence && (
-              <Badge variant="outline" className="text-xs">
-                {confidence}%
-              </Badge>
+            {hitRate && (
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-muted-foreground">Hit Rate:</span>
+                <span className={`text-xs font-medium ${hitRate >= 60 ? 'text-positive-odds' : 'text-negative-odds'}`}>
+                  {hitRate}%
+                </span>
+              </div>
             )}
           </div>
-        </div>
 
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-1">
-            <p className="text-sm text-muted-foreground">{stat}</p>
-            {seasonAvg && (
-              <p className="text-xs text-muted-foreground">Avg: {seasonAvg}</p>
-            )}
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              size="sm" 
+              className="bg-secondary hover:bg-secondary/80 text-foreground border border-border hover:border-positive-odds transition-colors"
+            >
+              <div className="text-center w-full">
+                <div className="text-xs text-muted-foreground">Over</div>
+                <div className={`font-semibold ${isPositiveOver ? 'text-positive-odds' : 'text-negative-odds'}`}>
+                  {overOdds}
+                </div>
+              </div>
+            </Button>
+            <Button 
+              size="sm" 
+              className="bg-secondary hover:bg-secondary/80 text-foreground border border-border hover:border-positive-odds transition-colors"
+            >
+              <div className="text-center w-full">
+                <div className="text-xs text-muted-foreground">Under</div>
+                <div className={`font-semibold ${isPositiveUnder ? 'text-positive-odds' : 'text-negative-odds'}`}>
+                  {underOdds}
+                </div>
+              </div>
+            </Button>
           </div>
-          <p className="text-lg font-bold text-foreground">{line}</p>
-          {recentForm && (
-            <p className="text-xs text-muted-foreground mt-1">L5: {recentForm}</p>
-          )}
-          {hitRate && (
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-muted-foreground">Hit Rate:</span>
-              <span className={`text-xs font-medium ${hitRate >= 60 ? 'text-positive-odds' : 'text-negative-odds'}`}>
-                {hitRate}%
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Button 
-            size="sm" 
-            className="bg-secondary hover:bg-secondary/80 text-foreground border border-border hover:border-positive-odds transition-colors"
-          >
-            <div className="text-center w-full">
-              <div className="text-xs text-muted-foreground">Over</div>
-              <div className={`font-semibold ${isPositiveOver ? 'text-positive-odds' : 'text-negative-odds'}`}>
-                {overOdds}
-              </div>
-            </div>
-          </Button>
-          <Button 
-            size="sm" 
-            className="bg-secondary hover:bg-secondary/80 text-foreground border border-border hover:border-positive-odds transition-colors"
-          >
-            <div className="text-center w-full">
-              <div className="text-xs text-muted-foreground">Under</div>
-              <div className={`font-semibold ${isPositiveUnder ? 'text-positive-odds' : 'text-negative-odds'}`}>
-                {underOdds}
-              </div>
-            </div>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      
+      <PlayerModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        playerName={player}
+        team={team}
+        sport={getSport()}
+      />
+    </>
   );
 };
 

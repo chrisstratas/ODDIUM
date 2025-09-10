@@ -7,6 +7,7 @@ import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
 import AdvancedPlayerAnalytics from "@/components/AdvancedPlayerAnalytics";
 import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
+import PlayerSearch from "@/components/PlayerSearch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -219,6 +220,7 @@ const NBA = () => {
           {/* Filters Sidebar */}
           <div className="lg:col-span-1 order-2 lg:order-1">
             <div className="space-y-6">
+              <PlayerSearch sport="NBA" />
               <ValueFilters onFiltersChange={setFilters} />
               <SGPCategoryFilters 
                 onCategoryChange={(category) => setSgpFilters(prev => ({ ...prev, category }))}
