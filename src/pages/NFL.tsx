@@ -238,9 +238,15 @@ const NFL = () => {
                 Debug: {displayProps.length} props available (Live: {liveProps.length}, Fallback: {nflFallbackProps.length})
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {displayProps.filter(prop => prop.valueRating === "high").map((prop, index) => (
-                  <PlayerPropCard key={index} {...prop} />
-                ))}
+                {displayProps.filter(prop => prop.valueRating === "high").length === 0 ? (
+                  <div className="col-span-2 text-center py-8 text-muted-foreground">
+                    No high value props found
+                  </div>
+                ) : (
+                  displayProps.filter(prop => prop.valueRating === "high").map((prop, index) => (
+                    <PlayerPropCard key={index} {...prop} />
+                  ))
+                )}
               </div>
             </div>
 
@@ -266,9 +272,15 @@ const NFL = () => {
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-6">🏈 All NFL Props</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {displayProps.map((prop, index) => (
-                  <PlayerPropCard key={index} {...prop} />
-                ))}
+                {displayProps.length === 0 ? (
+                  <div className="col-span-2 text-center py-8 text-muted-foreground">
+                    No NFL props available
+                  </div>
+                ) : (
+                  displayProps.map((prop, index) => (
+                    <PlayerPropCard key={index} {...prop} />
+                  ))
+                )}
               </div>
             </div>
           </div>
