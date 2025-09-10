@@ -109,6 +109,10 @@ const NFL = () => {
   ];
 
   const displayProps = liveProps.length > 0 ? liveProps : nflFallbackProps;
+  
+  // Debug logging
+  console.log('NFL Debug - Live props:', liveProps.length, 'Loading:', loading, 'Error:', error);
+  console.log('NFL Debug - Display props:', displayProps.length);
 
   const populateDatabase = async () => {
     setRefreshing(true);
