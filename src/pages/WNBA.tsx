@@ -15,16 +15,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { RotateCcw, Database } from "lucide-react";
 import heroImage from "@/assets/hero-sports.jpg";
 
-const NFL = () => {
+const WNBA = () => {
   const [filters, setFilters] = useState({
     sortBy: 'value',
-    category: 'all', 
+    category: 'all',
     confidence: 'all'
   });
 
   const [sgpFilters, setSgpFilters] = useState({
     sortBy: 'value',
-    category: 'nfl-passing',
+    category: 'wnba-scoring',
     confidence: 'all'
   });
 
@@ -32,88 +32,124 @@ const NFL = () => {
   const { props: sgpProps } = useAnalytics(sgpFilters);
   const [refreshing, setRefreshing] = useState(false);
 
-  // NFL-specific fallback props
-  const nflFallbackProps = [
+  // WNBA-specific fallback props
+  const wnbaFallbackProps = [
     {
-      player: "Josh Allen",
-      team: "Buffalo Bills",
-      stat: "Passing Yards",
-      line: 267.5,
+      player: "A'ja Wilson",
+      team: "Las Vegas Aces",
+      stat: "Points",
+      line: 24.5,
       overOdds: "-110",
       underOdds: "-110",
       trend: "up" as const,
       isPopular: true,
       confidence: 89,
       valueRating: "high" as const,
-      recentForm: "285.4 avg",
-      seasonAvg: 267.8,
-      hitRate: 78,
-      edge: 12.5,
+      recentForm: "26.8 PPG L5",
+      seasonAvg: 25.2,
+      hitRate: 76,
+      edge: 7.1,
       sportsbook: "DraftKings",
       lastUpdated: new Date().toISOString()
     },
     {
-      player: "Christian McCaffrey",
-      team: "San Francisco 49ers",
-      stat: "Rushing Yards",
-      line: 89.5,
-      overOdds: "-115",
-      underOdds: "-105",
-      confidence: 85,
-      valueRating: "high" as const,
+      player: "Breanna Stewart",
+      team: "New York Liberty",
+      stat: "Rebounds",
+      line: 8.5,
+      overOdds: "+105",
+      underOdds: "-125",
       trend: "up" as const,
-      recentForm: "94.2 avg",
-      seasonAvg: 89.1,
-      hitRate: 72,
-      edge: 8.3,
       isPopular: true,
+      confidence: 84,
+      valueRating: "high" as const,
+      recentForm: "9.4 RPG L5",
+      seasonAvg: 8.8,
+      hitRate: 71,
+      edge: 5.8,
       sportsbook: "FanDuel",
       lastUpdated: new Date().toISOString()
     },
     {
-      player: "Travis Kelce",
-      team: "Kansas City Chiefs", 
-      stat: "Receiving Yards",
-      line: 65.5,
-      overOdds: "+105",
-      underOdds: "-125",
-      confidence: 82,
-      valueRating: "high" as const,
+      player: "Sabrina Ionescu",
+      team: "New York Liberty",
+      stat: "3-Pointers Made",
+      line: 2.5,
+      overOdds: "+115",
+      underOdds: "-140",
       trend: "down" as const,
-      recentForm: "68.8 avg",
-      seasonAvg: 65.2,
-      hitRate: 68,
-      edge: 5.7,
       isPopular: false,
+      confidence: 78,
+      valueRating: "medium" as const,
+      recentForm: "2.2 3PM L5",
+      seasonAvg: 2.7,
+      hitRate: 64,
+      edge: 3.2,
       sportsbook: "BetMGM",
       lastUpdated: new Date().toISOString()
     },
     {
-      player: "Lamar Jackson",
-      team: "Baltimore Ravens",
-      stat: "Passing TDs",
-      line: 1.5,
-      overOdds: "+125",
-      underOdds: "-155",
-      confidence: 79,
-      valueRating: "medium" as const,
+      player: "Diana Taurasi",
+      team: "Phoenix Mercury",
+      stat: "Assists",
+      line: 5.5,
+      overOdds: "-105",
+      underOdds: "-115",
       trend: "up" as const,
-      recentForm: "1.8 avg",
-      seasonAvg: 1.6,
-      hitRate: 65,
-      edge: 3.2,
-      isPopular: true,
+      isPopular: false,
+      confidence: 75,
+      valueRating: "medium" as const,
+      recentForm: "6.2 APG L5",
+      seasonAvg: 5.8,
+      hitRate: 68,
+      edge: 2.9,
       sportsbook: "Caesars",
+      lastUpdated: new Date().toISOString()
+    },
+    {
+      player: "Kelsey Plum",
+      team: "Las Vegas Aces",
+      stat: "Points + Assists",
+      line: 28.5,
+      overOdds: "+100",
+      underOdds: "-120",
+      trend: "up" as const,
+      isPopular: true,
+      confidence: 87,
+      valueRating: "high" as const,
+      recentForm: "31.4 P+A L5",
+      seasonAvg: 29.2,
+      hitRate: 73,
+      edge: 6.7,
+      sportsbook: "DraftKings",
+      lastUpdated: new Date().toISOString()
+    },
+    {
+      player: "Candace Parker",
+      team: "Las Vegas Aces",
+      stat: "Double-Double",
+      line: 0.5,
+      overOdds: "+180",
+      underOdds: "-220",
+      trend: "up" as const,
+      isPopular: true,
+      confidence: 69,
+      valueRating: "low" as const,
+      recentForm: "2 DD L5",
+      seasonAvg: 1.4,
+      hitRate: 56,
+      edge: 1.8,
+      sportsbook: "FanDuel",
       lastUpdated: new Date().toISOString()
     }
   ];
 
-  const displayProps = liveProps.length > 0 ? liveProps : nflFallbackProps;
+  const displayProps = liveProps.length > 0 ? liveProps : wnbaFallbackProps;
 
   const populateDatabase = async () => {
     setRefreshing(true);
     try {
-      console.log('Populating NFL data...');
+      console.log('Populating WNBA data...');
       const response = await supabase.functions.invoke('fetch-live-analytics');
       
       if (response.error) {
@@ -121,8 +157,9 @@ const NFL = () => {
         throw response.error;
       }
       
-      console.log('NFL data populated successfully:', response.data);
+      console.log('Database populated successfully:', response.data);
       
+      // Wait a moment for data to be inserted, then refetch
       setTimeout(() => {
         refetch();
         setRefreshing(false);
@@ -139,12 +176,12 @@ const NFL = () => {
       <Header />
       <SportCategories />
       
-      {/* NFL Hero Section */}
+      {/* WNBA Hero Section */}
       <section className="relative py-20 px-4 overflow-hidden">
         <div className="absolute inset-0">
           <img 
             src={heroImage} 
-            alt="NFL Football Arena" 
+            alt="WNBA Basketball Arena" 
             className="w-full h-full object-cover opacity-20"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/90"></div>
@@ -154,13 +191,13 @@ const NFL = () => {
             <div className="max-w-2xl">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">
                 <span className="bg-gradient-primary bg-clip-text text-transparent">
-                  NFL Props
+                  WNBA Props
                 </span>
                 <br />
                 <span className="text-foreground">Expert Analysis</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-6">
-                Advanced NFL player prop analysis with quarterback passing yards, rushing props, and receiving targets insights.
+                Advanced WNBA player prop analysis with scoring, rebounding, assists, and comprehensive women's basketball analytics.
               </p>
               <Button 
                 size="lg" 
@@ -169,7 +206,7 @@ const NFL = () => {
                 disabled={refreshing}
               >
                 <Database className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Loading...' : 'Load NFL Props'}
+                {refreshing ? 'Loading...' : 'Load WNBA Props'}
               </Button>
             </div>
           </div>
@@ -197,20 +234,20 @@ const NFL = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3 order-1 lg:order-2">
-            {/* NFL Insights */}
+            {/* WNBA Insights */}
             <div className="mb-8">
               <BettingInsights />
             </div>
 
-            {/* NFL Player Analytics */}
+            {/* WNBA Player Analytics */}
             <div className="mb-8">
-              <AdvancedPlayerAnalytics sport="NFL" />
+              <AdvancedPlayerAnalytics sport="WNBA" />
             </div>
 
-            {/* High Value NFL Props */}
+            {/* High Value WNBA Props */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">🏈 High Value NFL Props</h2>
+                <h2 className="text-2xl font-bold">🏀 High Value WNBA Props</h2>
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
@@ -222,14 +259,14 @@ const NFL = () => {
                     {refreshing ? 'Loading...' : 'Refresh Data'}
                   </Button>
                   <Button variant="outline" size="sm">
-                    View All NFL Props
+                    View All WNBA Props
                   </Button>
                 </div>
               </div>
-              {loading && <div className="text-center py-4">Loading NFL analytics...</div>}
+              {loading && <div className="text-center py-4">Loading WNBA analytics...</div>}
               {error && (
                 <div className="text-center py-2 text-muted-foreground">
-                  Live NFL analytics unavailable — showing sample props.
+                  Live WNBA analytics unavailable — showing sample props.
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -242,14 +279,14 @@ const NFL = () => {
             {/* Risk vs Reward Analysis */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">⚖️ NFL Risk vs Reward</h2>
+                <h2 className="text-2xl font-bold">⚖️ WNBA Risk vs Reward</h2>
               </div>
               <RiskRewardAnalyzer availableBets={displayProps} />
             </div>
 
             {/* SGP Builder Props */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">🎯 NFL SGP Builder Props</h2>
+              <h2 className="text-2xl font-bold mb-6">🎯 WNBA SGP Builder Props</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(sgpProps.length > 0 ? sgpProps : displayProps).map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
@@ -257,9 +294,9 @@ const NFL = () => {
               </div>
             </div>
 
-            {/* All NFL Props */}
+            {/* All WNBA Props */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">🏈 All NFL Props</h2>
+              <h2 className="text-2xl font-bold mb-6">🏀 All WNBA Props</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {displayProps.map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
@@ -268,10 +305,9 @@ const NFL = () => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
 };
 
-export default NFL;
+export default WNBA;

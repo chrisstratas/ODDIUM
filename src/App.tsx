@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NBA from "./pages/NBA";
 import NFL from "./pages/NFL";
 import MLB from "./pages/MLB";
+import NHL from "./pages/NHL";
+import WNBA from "./pages/WNBA";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +24,8 @@ const App = () => (
           <Route path="/nba" element={<NBA />} />
           <Route path="/nfl" element={<NFL />} />
           <Route path="/mlb" element={<MLB />} />
+          <Route path="/nhl" element={<NHL />} />
+          <Route path="/wnba" element={<WNBA />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

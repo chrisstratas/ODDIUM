@@ -8,11 +8,12 @@ import ParlayBuilder from "@/components/BetSlip";
 import AdvancedPlayerAnalytics from "@/components/AdvancedPlayerAnalytics";
 import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { RotateCcw, TrendingUp, Users, Calendar, Target } from "lucide-react";
+import { RotateCcw, Database } from "lucide-react";
+import heroImage from "@/assets/hero-sports.jpg";
 
 const MLB = () => {
   const [filters, setFilters] = useState({
@@ -28,6 +29,7 @@ const MLB = () => {
   });
 
   const { props: liveProps, loading, error, refetch } = useAnalytics(filters);
+  const { props: sgpProps } = useAnalytics(sgpFilters);
   const [refreshing, setRefreshing] = useState(false);
 
   // MLB-specific fallback props
@@ -127,42 +129,47 @@ const MLB = () => {
       }, 1500);
       
     } catch (err) {
-      console.error('Failed to populate MLB data:', err);
+      console.error('Error:', err);
       setRefreshing(false);
     }
   };
 
-  const todaysGames = [
-    { home: "Dodgers", away: "Yankees", total: "O/U 8.5", line: "LAD -1.5", time: "7:10 PM PT" },
-    { home: "Braves", away: "Phillies", total: "O/U 9", line: "ATL -130", time: "7:20 PM ET" },
-    { home: "Astros", away: "Rangers", total: "O/U 8", line: "HOU -115", time: "8:10 PM CT" }
-  ];
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
       <Header />
-      <SportCategories currentSport="MLB" />
+      <SportCategories />
       
       {/* MLB Hero Section */}
-      <section className="relative bg-gradient-to-r from-green-600/20 to-blue-600/20 border-b">
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-4xl">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-4xl">⚾</span>
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
-                MLB Player Props
+      <section className="relative py-20 px-4 overflow-hidden">
+        <div className="absolute inset-0">
+          <img 
+            src={heroImage} 
+            alt="MLB Baseball Stadium" 
+            className="w-full h-full object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/90"></div>
+        </div>
+        <div className="container mx-auto relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div className="max-w-2xl">
+              <h1 className="text-4xl md:text-6xl font-bold mb-4">
+                <span className="bg-gradient-primary bg-clip-text text-transparent">
+                  MLB Props
+                </span>
+                <br />
+                <span className="text-foreground">Expert Analysis</span>
               </h1>
-            </div>
-            <p className="text-xl text-muted-foreground mb-6">
-              Track pitcher strikeouts, batter home runs, and team totals with comprehensive baseball analytics and live odds.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow">
-                View Today's Games
-              </Button>
-              <Button variant="outline" size="lg">
-                <Target className="h-4 w-4 mr-2" />
-                Season Props
+              <p className="text-xl text-muted-foreground mb-6">
+                Advanced MLB player prop analysis with pitcher strikeouts, batter home runs, and comprehensive baseball analytics.
+              </p>
+              <Button 
+                size="lg" 
+                className="bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow"
+                onClick={populateDatabase}
+                disabled={refreshing}
+              >
+                <Database className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Loading...' : 'Load MLB Props'}
               </Button>
             </div>
           </div>
@@ -176,87 +183,15 @@ const MLB = () => {
           <div className="lg:col-span-1 order-2 lg:order-1">
             <div className="space-y-6">
               <ValueFilters onFiltersChange={setFilters} />
-              
-              {/* MLB-specific filters */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">⚾ MLB Categories</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {[
-                      { id: 'mlb-batting', label: 'Batting Props', icon: '🏏' },
-                      { id: 'mlb-pitching', label: 'Pitching Props', icon: '⚡' },
-                      { id: 'mlb-team', label: 'Team Totals', icon: '📊' },
-                      { id: 'mlb-first5', label: 'First 5 Innings', icon: '🎯' },
-                      { id: 'mlb-specials', label: 'Special Props', icon: '⭐' }
-                    ].map((category) => (
-                      <Button
-                        key={category.id}
-                        variant={sgpFilters.category === category.id ? "default" : "ghost"}
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => setSgpFilters(prev => ({ ...prev, category: category.id }))}
-                      >
-                        <span className="mr-2">{category.icon}</span>
-                        {category.label}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Today's Games */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Today's Games
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {todaysGames.map((game, index) => (
-                      <div key={index} className="p-3 rounded-lg bg-secondary/50">
-                        <div className="font-medium text-sm">
-                          {game.away} @ {game.home}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {game.line} • {game.total}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {game.time}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Weather Report */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    🌤️ Weather Impact
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Wind Speed:</span>
-                      <span className="text-green-500">8 mph ↗️</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Temperature:</span>
-                      <span>72°F</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Home Run Factor:</span>
-                      <span className="text-green-500">+12%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <SGPCategoryFilters 
+                onCategoryChange={(category) => setSgpFilters(prev => ({ ...prev, category }))}
+                onSortChange={(sortBy) => setSgpFilters(prev => ({ ...prev, sortBy }))}
+                onConfidenceChange={(confidence) => setSgpFilters(prev => ({ ...prev, confidence }))}
+                selectedCategory={sgpFilters.category}
+                selectedSort={sgpFilters.sortBy}
+                selectedConfidence={sgpFilters.confidence}
+              />
+              <ParlayBuilder />
             </div>
           </div>
 
@@ -264,30 +199,12 @@ const MLB = () => {
           <div className="lg:col-span-3 order-1 lg:order-2">
             {/* MLB Insights */}
             <div className="mb-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <TrendingUp className="h-5 w-5 mr-2" />
-                    Today's MLB Insights
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 rounded-lg bg-secondary/30">
-                      <div className="text-2xl font-bold text-green-500">71%</div>
-                      <div className="text-sm text-muted-foreground">Strikeout Props Hit Rate</div>
-                    </div>
-                    <div className="text-center p-4 rounded-lg bg-secondary/30">
-                      <div className="text-2xl font-bold text-blue-500">8.2</div>
-                      <div className="text-sm text-muted-foreground">Avg Total Runs Today</div>
-                    </div>
-                    <div className="text-center p-4 rounded-lg bg-secondary/30">
-                      <div className="text-2xl font-bold text-purple-500">156</div>
-                      <div className="text-sm text-muted-foreground">Active Player Props</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <BettingInsights />
+            </div>
+
+            {/* MLB Player Analytics */}
+            <div className="mb-8">
+              <AdvancedPlayerAnalytics sport="MLB" />
             </div>
 
             {/* High Value MLB Props */}
@@ -302,7 +219,7 @@ const MLB = () => {
                     disabled={refreshing}
                   >
                     <RotateCcw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                    {refreshing ? 'Loading...' : 'Load Live Data'}
+                    {refreshing ? 'Loading...' : 'Refresh Data'}
                   </Button>
                   <Button variant="outline" size="sm">
                     View All MLB Props
@@ -312,7 +229,7 @@ const MLB = () => {
               {loading && <div className="text-center py-4">Loading MLB analytics...</div>}
               {error && (
                 <div className="text-center py-2 text-muted-foreground">
-                  Live MLB analytics unavailable — showing fallback props.
+                  Live MLB analytics unavailable — showing sample props.
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -325,41 +242,31 @@ const MLB = () => {
             {/* Risk vs Reward Analysis */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">⚖️ Risk vs Reward</h2>
+                <h2 className="text-2xl font-bold">⚖️ MLB Risk vs Reward</h2>
               </div>
               <RiskRewardAnalyzer availableBets={displayProps} />
             </div>
 
-            {/* MLB Batting Props */}
+            {/* SGP Builder Props */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">🏏 MLB Batting Props</h2>
+              <h2 className="text-2xl font-bold mb-6">🎯 MLB SGP Builder Props</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {displayProps.filter(prop => 
-                  prop.stat.includes("Hits") || 
-                  prop.stat.includes("Home") || 
-                  prop.stat.includes("Total") ||
-                  prop.stat.includes("RBI")
-                ).slice(0, 4).map((prop, index) => (
+                {(sgpProps.length > 0 ? sgpProps : displayProps).map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
                 ))}
               </div>
             </div>
 
-            {/* Pitcher Strikeouts */}
+            {/* All MLB Props */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">⚡ Pitcher Strikeouts</h2>
+              <h2 className="text-2xl font-bold mb-6">⚾ All MLB Props</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {displayProps.filter(prop => prop.stat.includes("Strikeouts")).slice(0, 4).map((prop, index) => (
+                {displayProps.map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
                 ))}
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Bet Slip */}
-        <div className="fixed bottom-4 right-4 z-50">
-          <ParlayBuilder />
         </div>
       </div>
     </div>
