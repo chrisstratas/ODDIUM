@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { SessionManager } from '@/lib/security';
 
 interface AuthContextType {
   user: User | null;
@@ -42,12 +43,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // Update session expiry on successful auth
+          SessionManager.updateSessionExpiry();
+          
           // Check access after setting user
           setTimeout(() => {
             checkUserAccess(session.user.id);
           }, 0);
         } else {
           setHasAccess(false);
+          SessionManager.clearSession();
         }
         
         setLoading(false);
@@ -93,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    SessionManager.clearSession();
     await supabase.auth.signOut();
   };
 

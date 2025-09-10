@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/AuthGuard";
+import { SessionTimeoutWarning } from "@/components/SessionTimeoutWarning";
 import Index from "./pages/Index";
 import NBA from "./pages/NBA";
 import NFL from "./pages/NFL";
@@ -23,6 +24,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <SessionTimeoutWarning />
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />
