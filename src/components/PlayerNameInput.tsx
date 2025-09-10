@@ -144,7 +144,7 @@ const PlayerNameInput = ({
 
   const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(inputValue.toLowerCase());
-    const matchesSport = sport === "All" || player.sport === sport;
+    const matchesSport = player.sport === sport;
     return matchesSearch && matchesSport && inputValue.length > 1;
   }).slice(0, 6);
 
