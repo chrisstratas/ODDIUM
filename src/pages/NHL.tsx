@@ -194,7 +194,7 @@ const NHL = () => {
                   NHL Props
                 </span>
                 <br />
-                <span className="text-foreground">Expert Analysis</span>
+                <span className="text-foreground">Data Analysis</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-6">
                 Advanced NHL player prop analysis with goals, assists, shots, saves, and comprehensive hockey analytics.

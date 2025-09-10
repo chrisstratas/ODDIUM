@@ -157,7 +157,7 @@ const NFL = () => {
                   NFL Props
                 </span>
                 <br />
-                <span className="text-foreground">Expert Analysis</span>
+                <span className="text-foreground">Data Analysis</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-6">
                 Advanced NFL player prop analysis with quarterback passing yards, rushing props, and receiving targets insights.

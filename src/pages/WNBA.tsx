@@ -194,7 +194,7 @@ const WNBA = () => {
                   WNBA Props
                 </span>
                 <br />
-                <span className="text-foreground">Expert Analysis</span>
+                <span className="text-foreground">Data Analysis</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-6">
                 Advanced WNBA player prop analysis with scoring, rebounding, assists, and comprehensive women's basketball analytics.

@@ -157,7 +157,7 @@ const MLB = () => {
                   MLB Props
                 </span>
                 <br />
-                <span className="text-foreground">Expert Analysis</span>
+                <span className="text-foreground">Data Analysis</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-6">
                 Advanced MLB player prop analysis with pitcher strikeouts, batter home runs, and comprehensive baseball analytics.
