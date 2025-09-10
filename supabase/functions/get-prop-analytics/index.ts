@@ -55,6 +55,20 @@ serve(async (req) => {
 
     // Apply filters
     if (category !== 'all') {
+      // Handle sport-specific categories
+      if (category.startsWith('nba-')) {
+        oddsQuery = oddsQuery.eq('sport', 'NBA');
+      } else if (category.startsWith('nfl-')) {
+        oddsQuery = oddsQuery.eq('sport', 'NFL');
+      } else if (category.startsWith('mlb-')) {
+        oddsQuery = oddsQuery.eq('sport', 'MLB');
+      } else if (category.startsWith('nhl-')) {
+        oddsQuery = oddsQuery.eq('sport', 'NHL');
+      } else if (category.startsWith('wnba-')) {
+        oddsQuery = oddsQuery.eq('sport', 'WNBA');
+      }
+      
+      // Handle specific stat filters (keeping existing NBA filters for compatibility)
       if (category === 'sgp-points') {
         oddsQuery = oddsQuery.eq('stat_type', 'Points');
       } else if (category === 'sgp-rebounds') {

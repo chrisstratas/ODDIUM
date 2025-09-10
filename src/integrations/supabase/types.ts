@@ -23,6 +23,7 @@ export type Database = {
           line: number
           over_odds: string
           player_name: string
+          sport: string | null
           sportsbook: string
           stat_type: string
           team: string
@@ -37,6 +38,7 @@ export type Database = {
           line: number
           over_odds: string
           player_name: string
+          sport?: string | null
           sportsbook: string
           stat_type: string
           team: string
@@ -51,6 +53,7 @@ export type Database = {
           line?: number
           over_odds?: string
           player_name?: string
+          sport?: string | null
           sportsbook?: string
           stat_type?: string
           team?: string
@@ -265,6 +268,7 @@ export type Database = {
           player_name: string
           recent_form: number | null
           season_average: number | null
+          sport: string | null
           stat_type: string
           team: string
           trend_direction: string | null
@@ -277,6 +281,7 @@ export type Database = {
           player_name: string
           recent_form?: number | null
           season_average?: number | null
+          sport?: string | null
           stat_type: string
           team: string
           trend_direction?: string | null
@@ -289,6 +294,7 @@ export type Database = {
           player_name?: string
           recent_form?: number | null
           season_average?: number | null
+          sport?: string | null
           stat_type?: string
           team?: string
           trend_direction?: string | null
