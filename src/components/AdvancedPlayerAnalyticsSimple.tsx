@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Activity, Target } from 'lucide-react';
+import PlayerNameInput from './PlayerNameInput';
 
 interface AdvancedPlayerAnalyticsProps {
   sport: string;
 }
 
 const AdvancedPlayerAnalytics = ({ sport }: AdvancedPlayerAnalyticsProps) => {
+  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
+
   return (
     <Card>
       <CardHeader>
@@ -16,6 +20,27 @@ const AdvancedPlayerAnalytics = ({ sport }: AdvancedPlayerAnalyticsProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Player Search */}
+        <div className="mb-6">
+          <label className="text-sm font-medium mb-2 block">Search Player</label>
+          <PlayerNameInput 
+            placeholder={`Search ${sport} players for advanced analytics...`}
+            sport={sport}
+            value={selectedPlayer}
+            onChange={setSelectedPlayer}
+            onPlayerSelect={(player) => {
+              setSelectedPlayer(player.name);
+            }}
+          />
+          {selectedPlayer && (
+            <div className="mt-2">
+              <Badge variant="secondary">
+                Analyzing: {selectedPlayer}
+              </Badge>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center p-4 rounded-lg bg-secondary/30">
             <TrendingUp className="h-8 w-8 mx-auto mb-2 text-positive-odds" />
@@ -35,7 +60,10 @@ const AdvancedPlayerAnalytics = ({ sport }: AdvancedPlayerAnalyticsProps) => {
         </div>
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
           <p className="text-sm text-muted-foreground text-center">
-            Advanced player matchup analysis and historical performance data for {sport} players.
+            {selectedPlayer 
+              ? `Advanced analytics and performance insights for ${selectedPlayer}`
+              : `Search for any ${sport} player to view detailed analytics and performance data.`
+            }
           </p>
         </div>
       </CardContent>
