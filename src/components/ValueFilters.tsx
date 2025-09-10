@@ -1,36 +1,78 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Filter, SortAsc } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useState } from "react";
 
-const ValueFilters = () => {
+interface ValueFiltersProps {
+  onFiltersChange?: (filters: any) => void;
+}
+
+const ValueFilters = ({ onFiltersChange }: ValueFiltersProps) => {
+  const [filters, setFilters] = useState({
+    sortBy: 'value',
+    category: 'all',
+    confidence: 'all'
+  });
+
+  const { refreshAnalytics, loading } = useAnalytics(filters);
+
+  const handleFilterChange = (key: string, value: string) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    onFiltersChange?.(newFilters);
+  };
+
+  const handleReset = () => {
+    const resetFilters = { sortBy: 'value', category: 'all', confidence: 'all' };
+    setFilters(resetFilters);
+    onFiltersChange?.(resetFilters);
+  };
+
   return (
     <Card className="bg-gradient-card border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Filter className="w-5 h-5" />
-          Smart Filters
-        </CardTitle>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Smart Filters</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refreshAnalytics}
+            disabled={loading}
+            className="h-8 w-8 p-0"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Select>
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue placeholder="Value Rating" />
+        {/* Value Rating Filter */}
+        <div>
+          <label className="text-sm font-medium block mb-2">Value Rating</label>
+          <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
+            <SelectTrigger className="bg-muted border-border">
+              <SelectValue placeholder="Select value rating" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="high">High Value Only</SelectItem>
-              <SelectItem value="medium">Medium+ Value</SelectItem>
               <SelectItem value="all">All Values</SelectItem>
+              <SelectItem value="high">High Value</SelectItem>
+              <SelectItem value="medium">Medium Value</SelectItem>
+              <SelectItem value="low">Low Value</SelectItem>
             </SelectContent>
           </Select>
+        </div>
 
-          <Select>
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue placeholder="Confidence" />
+        {/* Confidence Filter */}
+        <div>
+          <label className="text-sm font-medium block mb-2">Confidence</label>
+          <Select value={filters.confidence} onValueChange={(value) => handleFilterChange('confidence', value)}>
+            <SelectTrigger className="bg-muted border-border">
+              <SelectValue placeholder="Select confidence" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All Confidence</SelectItem>
               <SelectItem value="80">80%+ Confidence</SelectItem>
               <SelectItem value="70">70%+ Confidence</SelectItem>
               <SelectItem value="60">60%+ Confidence</SelectItem>
@@ -38,45 +80,61 @@ const ValueFilters = () => {
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Select>
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue placeholder="Hit Rate" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="70">70%+ Hit Rate</SelectItem>
-              <SelectItem value="60">60%+ Hit Rate</SelectItem>
-              <SelectItem value="50">50%+ Hit Rate</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select>
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue placeholder="Sort By" />
+        {/* Sort By */}
+        <div>
+          <label className="text-sm font-medium block mb-2">Sort By</label>
+          <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
+            <SelectTrigger className="bg-muted border-border">
+              <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="value">Value Rating</SelectItem>
               <SelectItem value="confidence">Confidence</SelectItem>
-              <SelectItem value="hitrate">Hit Rate</SelectItem>
-              <SelectItem value="recent">Recent Form</SelectItem>
+              <SelectItem value="edge">Edge %</SelectItem>
+              <SelectItem value="hit_rate">Hit Rate</SelectItem>
+              <SelectItem value="recent_form">Recent Form</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-            🔥 Hot Streaks
-          </Badge>
-          <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-            📈 Trending Up
-          </Badge>
-          <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-            ⭐ Editor's Picks
-          </Badge>
+        {/* Filter Tags */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Quick Filters</label>
+          <div className="flex flex-wrap gap-2">
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-warning/20 border-warning text-warning"
+              onClick={() => {
+                handleFilterChange('sortBy', 'recent_form');
+                handleFilterChange('confidence', '70');
+              }}
+            >
+              🔥 Hot Streaks
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-accent/20 border-accent text-accent"
+              onClick={() => {
+                handleFilterChange('sortBy', 'edge');
+                handleFilterChange('confidence', '60');
+              }}
+            >
+              📈 Trending Up
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-positive-odds/20 border-positive-odds text-positive-odds"
+              onClick={() => {
+                handleFilterChange('sortBy', 'value');
+                handleFilterChange('confidence', '80');
+              }}
+            >
+              ⭐ Editor's Picks
+            </Badge>
+          </div>
         </div>
 
-        <Button variant="outline" size="sm" className="w-full">
-          <SortAsc className="w-4 h-4 mr-2" />
+        <Button variant="outline" onClick={handleReset} className="w-full">
           Reset Filters
         </Button>
       </CardContent>

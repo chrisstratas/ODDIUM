@@ -3,13 +3,32 @@ import SportCategories from "@/components/SportCategories";
 import PlayerPropCard from "@/components/PlayerPropCard";
 import BettingInsights from "@/components/BettingInsights";
 import ValueFilters from "@/components/ValueFilters";
+import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useState } from "react";
 import heroImage from "@/assets/hero-sports.jpg";
 
 const Index = () => {
-  const featuredProps = [
+  const [filters, setFilters] = useState({
+    sortBy: 'value',
+    category: 'all',
+    confidence: 'all'
+  });
+
+  const [sgpFilters, setSgpFilters] = useState({
+    sortBy: 'value',
+    category: 'all',
+    confidence: 'all'
+  });
+
+  const { props: liveProps, loading, error } = useAnalytics(filters);
+  const { props: sgpProps } = useAnalytics(sgpFilters);
+
+  // Fallback to static data if live data is empty
+  const fallbackProps = [
     {
       player: "LeBron James",
       team: "Los Angeles Lakers",
@@ -95,6 +114,8 @@ const Index = () => {
     }
   ];
 
+  const displayProps = liveProps.length > 0 ? liveProps : fallbackProps;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -133,7 +154,15 @@ const Index = () => {
           {/* Filters Sidebar */}
           <div className="lg:col-span-1 order-2 lg:order-1">
             <div className="space-y-6">
-              <ValueFilters />
+              <ValueFilters onFiltersChange={setFilters} />
+              <SGPCategoryFilters 
+                onCategoryChange={(category) => setSgpFilters(prev => ({ ...prev, category }))}
+                onSortChange={(sortBy) => setSgpFilters(prev => ({ ...prev, sortBy }))}
+                onConfidenceChange={(confidence) => setSgpFilters(prev => ({ ...prev, confidence }))}
+                selectedCategory={sgpFilters.category}
+                selectedSort={sgpFilters.sortBy}
+                selectedConfidence={sgpFilters.confidence}
+              />
               <ParlayBuilder />
             </div>
           </div>
@@ -152,8 +181,20 @@ const Index = () => {
                   View All
                 </Button>
               </div>
+              {loading && <div className="text-center py-4">Loading live analytics...</div>}
+              {error && <div className="text-center py-4 text-destructive">Error: {error}</div>}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {featuredProps.filter(prop => prop.valueRating === "high").map((prop, index) => (
+                {displayProps.filter(prop => prop.valueRating === "high").map((prop, index) => (
+                  <PlayerPropCard key={index} {...prop} />
+                ))}
+              </div>
+            </div>
+
+            {/* SGP Category Props */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-6">🎯 SGP Builder Props</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(sgpProps.length > 0 ? sgpProps : displayProps).map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
                 ))}
               </div>
@@ -161,9 +202,9 @@ const Index = () => {
 
             {/* All Props */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">🏀 Today's NBA Props</h2>
+              <h2 className="text-2xl font-bold mb-6">🏀 All Live Props</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {featuredProps.map((prop, index) => (
+                {displayProps.map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
                 ))}
               </div>
