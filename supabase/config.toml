@@ -3,5 +3,8 @@ project_id = "gmwdwxkfygppiavyysyv"
 [functions.fetch-live-analytics]
 verify_jwt = false
 
+[functions.fetch-live-odds]
+verify_jwt = false
+
 [functions.get-prop-analytics]
 verify_jwt = false

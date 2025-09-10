@@ -61,20 +61,28 @@ export const useAnalytics = (filters: AnalyticsFilters) => {
 
   const refreshAnalytics = async () => {
     try {
-      console.log('Triggering analytics refresh...');
+      console.log('Triggering live odds and analytics refresh...');
       
-      const { data, error: functionError } = await supabase.functions.invoke('fetch-live-analytics');
+      // Fetch live odds from major sportsbooks in parallel with analytics
+      const [oddsResponse, analyticsResponse] = await Promise.all([
+        supabase.functions.invoke('fetch-live-odds'),
+        supabase.functions.invoke('fetch-live-analytics')
+      ]);
       
-      if (functionError) {
-        throw functionError;
+      if (oddsResponse.error) {
+        console.error('Live odds error:', oddsResponse.error);
+      }
+      
+      if (analyticsResponse.error) {
+        throw analyticsResponse.error;
       }
 
-      console.log('Analytics refresh triggered:', data);
+      console.log('Live odds and analytics refresh triggered');
       
       // Wait a moment for the data to be processed, then fetch fresh data
       setTimeout(() => {
         fetchAnalytics();
-      }, 1000);
+      }, 2000);
       
     } catch (err) {
       console.error('Error refreshing analytics:', err);
