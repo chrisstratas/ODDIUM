@@ -7,10 +7,8 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">T.O</span>
-            </div>
-            <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">THE ODDS</h1>
+            
+            <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">WHATS THE ODDS</h1>
           </div>
 
           {/* Search Bar */}
