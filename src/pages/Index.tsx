@@ -75,60 +75,96 @@ const Index = () => {
     }
   };
 
-  // Fallback props for analytics
+  // Updated fallback props with current season data
   const fallbackProps = [
     {
-      player: "LeBron James",
-      team: "Lakers",
+      player: "Victor Wembanyama",
+      team: "San Antonio Spurs",
       stat: "Points",
-      line: 25.5,
-      overOdds: "-110",
-      underOdds: "-110",
+      line: 22.5,
+      overOdds: "-108",
+      underOdds: "-112",
       trend: "up" as const,
       isPopular: true,
-      confidence: 85,
+      confidence: 89,
       valueRating: "high" as const,
-      recentForm: "30.2 PPG L5",
-      seasonAvg: 28.1,
-      hitRate: 72,
-      edge: 4.2,
+      recentForm: "25.1 PPG L5",
+      seasonAvg: 23.7,
+      hitRate: 76,
+      edge: 6.8,
       sportsbook: "DraftKings",
       lastUpdated: new Date().toISOString()
     },
     {
-      player: "Stephen Curry",
-      team: "Warriors",
-      stat: "3-Pointers Made",
-      line: 4.5,
-      overOdds: "+105",
-      underOdds: "-125",
+      player: "Nikola Jokic",
+      team: "Denver Nuggets",
+      stat: "Triple-Double",
+      line: 0.5,
+      overOdds: "+180",
+      underOdds: "-220",
       trend: "up" as const,
       isPopular: true,
-      confidence: 78,
+      confidence: 84,
       valueRating: "high" as const,
-      recentForm: "5.8 3PM L5",
-      seasonAvg: 4.9,
-      hitRate: 68,
-      edge: 3.8,
+      recentForm: "3 TD L5",
+      seasonAvg: 2.1,
+      hitRate: 71,
+      edge: 8.2,
       sportsbook: "FanDuel",
       lastUpdated: new Date().toISOString()
     },
     {
-      player: "Luka Doncic",
-      team: "Mavericks",
-      stat: "Assists",
-      line: 8.5,
-      overOdds: "-105",
-      underOdds: "-115",
-      trend: "down" as const,
-      isPopular: false,
-      confidence: 82,
-      valueRating: "medium" as const,
-      recentForm: "7.8 AST L5",
-      seasonAvg: 8.9,
-      hitRate: 71,
-      edge: 2.9,
+      player: "Josh Allen",
+      team: "Buffalo Bills",
+      stat: "Passing Yards",
+      line: 247.5,
+      overOdds: "-110",
+      underOdds: "-110",
+      trend: "up" as const,
+      isPopular: true,
+      confidence: 87,
+      valueRating: "high" as const,
+      recentForm: "268.4 YPG L4",
+      seasonAvg: 251.8,
+      hitRate: 73,
+      edge: 5.4,
       sportsbook: "BetMGM",
+      lastUpdated: new Date().toISOString()
+    },
+    {
+      player: "Connor McDavid",
+      team: "Edmonton Oilers",
+      stat: "Points",
+      line: 1.5,
+      overOdds: "+105",
+      underOdds: "-125",
+      trend: "up" as const,
+      isPopular: true,
+      confidence: 91,
+      valueRating: "high" as const,
+      recentForm: "2.2 PPG L5",
+      seasonAvg: 1.9,
+      hitRate: 78,
+      edge: 7.1,
+      sportsbook: "Caesars",
+      lastUpdated: new Date().toISOString()
+    },
+    {
+      player: "Shohei Ohtani",
+      team: "Los Angeles Dodgers",
+      stat: "Total Bases",
+      line: 1.5,
+      overOdds: "+115",
+      underOdds: "-135",
+      trend: "up" as const,
+      isPopular: true,
+      confidence: 86,
+      valueRating: "high" as const,
+      recentForm: "2.1 TB L10",
+      seasonAvg: 1.8,
+      hitRate: 74,
+      edge: 6.3,
+      sportsbook: "DraftKings",
       lastUpdated: new Date().toISOString()
     }
   ];
@@ -184,28 +220,28 @@ const Index = () => {
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
               <CardContent className="p-6 text-center">
                 <TrendingUp className="h-8 w-8 text-primary mx-auto mb-2" />
-                <p className="text-2xl font-bold text-primary">127</p>
+                <p className="text-2xl font-bold text-primary">342</p>
                 <p className="text-sm text-muted-foreground">Active Insights</p>
               </CardContent>
             </Card>
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
               <CardContent className="p-6 text-center">
                 <Target className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-green-500">73%</p>
+                <p className="text-2xl font-bold text-green-500">82%</p>
                 <p className="text-sm text-muted-foreground">Avg Confidence</p>
               </CardContent>
             </Card>
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
               <CardContent className="p-6 text-center">
                 <BarChart3 className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-yellow-500">+15%</p>
+                <p className="text-2xl font-bold text-yellow-500">+18%</p>
                 <p className="text-sm text-muted-foreground">Expected Edge</p>
               </CardContent>
             </Card>
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
               <CardContent className="p-6 text-center">
                 <Database className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-blue-500">2,547</p>
+                <p className="text-2xl font-bold text-blue-500">4,817</p>
                 <p className="text-sm text-muted-foreground">Matchups Analyzed</p>
               </CardContent>
             </Card>
