@@ -25,62 +25,82 @@ serve(async (req) => {
 
     console.log('Fetching prop analytics with filters:', { sortBy, category, confidence });
 
-    // Build query
-    let query = supabase
+    // Build query for live odds
+    let oddsQuery = supabase
       .from('live_odds')
-      .select(`
-        *,
-        prop_analytics!inner(
-          season_average,
-          recent_form,
-          hit_rate,
-          trend_direction,
-          edge_percentage
-        )
-      `);
+      .select('*');
 
     // Apply filters
     if (category !== 'all') {
       if (category === 'sgp-points') {
-        query = query.eq('stat_type', 'Points');
+        oddsQuery = oddsQuery.eq('stat_type', 'Points');
       } else if (category === 'sgp-rebounds') {
-        query = query.eq('stat_type', 'Rebounds');
+        oddsQuery = oddsQuery.eq('stat_type', 'Rebounds');
       } else if (category === 'sgp-assists') {
-        query = query.eq('stat_type', 'Assists');
+        oddsQuery = oddsQuery.eq('stat_type', 'Assists');
       } else if (category === 'sgp-threes') {
-        query = query.eq('stat_type', '3-Pointers Made');
+        oddsQuery = oddsQuery.eq('stat_type', '3-Pointers Made');
       }
     }
 
     if (confidence !== 'all') {
       const minConfidence = parseInt(confidence);
-      query = query.gte('confidence_score', minConfidence);
+      oddsQuery = oddsQuery.gte('confidence_score', minConfidence);
     }
 
-    // Apply sorting
+    // Get live odds
+    const { data: oddsData, error: oddsError } = await oddsQuery.limit(50);
+
+    if (oddsError) {
+      console.error('Odds query error:', oddsError);
+      throw oddsError;
+    }
+
+    // Get analytics data for the players
+    const { data: analyticsData, error: analyticsError } = await supabase
+      .from('prop_analytics')
+      .select('*');
+
+    if (analyticsError) {
+      console.error('Analytics query error:', analyticsError);
+      throw analyticsError;
+    }
+
+    // Combine the data
+    const combinedData = oddsData?.map(odds => {
+      const analytics = analyticsData?.find(a => 
+        a.player_name === odds.player_name && a.stat_type === odds.stat_type
+      );
+      
+      return {
+        ...odds,
+        analytics: analytics || {}
+      };
+    }) || [];
+
+    // Apply sorting to the combined data
+    let sortedData = [...combinedData];
+    
     switch (sortBy) {
       case 'confidence':
-        query = query.order('confidence_score', { ascending: false });
+        sortedData.sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
         break;
       case 'edge':
-        query = query.order('prop_analytics.edge_percentage', { ascending: false });
+        sortedData.sort((a, b) => (b.analytics?.edge_percentage || 0) - (a.analytics?.edge_percentage || 0));
         break;
       case 'hit_rate':
-        query = query.order('prop_analytics.hit_rate', { ascending: false });
+        sortedData.sort((a, b) => (b.analytics?.hit_rate || 0) - (a.analytics?.hit_rate || 0));
         break;
       case 'recent_form':
-        query = query.order('prop_analytics.recent_form', { ascending: false });
+        sortedData.sort((a, b) => (b.analytics?.recent_form || 0) - (a.analytics?.recent_form || 0));
         break;
       default: // value
-        query = query.eq('value_rating', 'high').order('confidence_score', { ascending: false });
+        sortedData = sortedData.filter(item => item.value_rating === 'high')
+          .sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
     }
 
-    const { data: props, error } = await query.limit(20);
-
-    if (error) {
-      console.error('Database error:', error);
-      throw error;
-    }
+    // Take top results
+    const props = sortedData.slice(0, 20);
 
     // Transform data for frontend
     const formattedProps = props?.map(prop => ({
@@ -92,14 +112,14 @@ serve(async (req) => {
       underOdds: prop.under_odds,
       confidence: prop.confidence_score,
       valueRating: (prop.value_rating as "high" | "medium" | "low") || "medium",
-      trend: (prop.prop_analytics[0]?.trend_direction === 'up' || prop.prop_analytics[0]?.trend_direction === 'down') 
-        ? prop.prop_analytics[0]?.trend_direction as "up" | "down" 
+      trend: (prop.analytics?.trend_direction === 'up' || prop.analytics?.trend_direction === 'down') 
+        ? prop.analytics?.trend_direction as "up" | "down" 
         : 'up' as const,
-      recentForm: `${prop.prop_analytics[0]?.recent_form?.toFixed(1)} avg`,
-      seasonAvg: prop.prop_analytics[0]?.season_average,
-      hitRate: prop.prop_analytics[0]?.hit_rate,
-      edge: prop.prop_analytics[0]?.edge_percentage,
-      isPopular: prop.confidence_score > 75,
+      recentForm: `${prop.analytics?.recent_form?.toFixed(1) || '0.0'} avg`,
+      seasonAvg: prop.analytics?.season_average || 0,
+      hitRate: prop.analytics?.hit_rate || 0,
+      edge: prop.analytics?.edge_percentage || 0,
+      isPopular: (prop.confidence_score || 0) > 75,
       sportsbook: prop.sportsbook,
       lastUpdated: prop.last_updated
     })) || [];
