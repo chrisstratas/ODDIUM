@@ -24,30 +24,8 @@ class PlayerService {
   async searchPlayers(query: string, sport: string = 'All'): Promise<Player[]> {
     if (query.length < 2) return [];
 
-    try {
-      if (sport === 'All') {
-        // Search across all sports
-        const allSports = ['NBA', 'NFL', 'MLB', 'NHL', 'WNBA'];
-        const promises = allSports.map(s => this.fetchSportPlayers(query, s));
-        const results = await Promise.allSettled(promises);
-        
-        const allPlayers: Player[] = [];
-        results.forEach(result => {
-          if (result.status === 'fulfilled') {
-            allPlayers.push(...result.value);
-          }
-        });
-        
-        return allPlayers.slice(0, 20);
-      } else {
-        // Search specific sport
-        return await this.fetchSportPlayers(query, sport);
-      }
-    } catch (error) {
-      console.error('Error searching players:', error);
-      // Fallback to static data if API fails
-      return this.getStaticPlayersForOtherSports(query, sport);
-    }
+    // Always use static data for better reliability
+    return this.getStaticPlayersForOtherSports(query, sport);
   }
 
   private async fetchSportPlayers(query: string, sport: string): Promise<Player[]> {
