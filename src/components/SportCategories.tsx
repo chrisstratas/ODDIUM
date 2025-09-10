@@ -5,7 +5,7 @@ const sports = [
   { name: "NFL", icon: "🏈", active: false },
   { name: "MLB", icon: "⚾", active: false },
   { name: "NHL", icon: "🏒", active: false },
-  { name: "Soccer", icon: "⚽", active: false },
+  { name: "WNBA", icon: "🏀", active: false },
 ];
 
 const SportCategories = () => {
