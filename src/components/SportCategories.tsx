@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const sports = [
-  { name: "NBA", icon: "🏀", path: "/" },
+  { name: "Analytics Hub", icon: "🎯", path: "/" },
+  { name: "NBA", icon: "🏀", path: "/nba" },
   { name: "NFL", icon: "🏈", path: "/nfl" },
   { name: "MLB", icon: "⚾", path: "/mlb" },
   { name: "NHL", icon: "🏒", path: "/nhl" },
