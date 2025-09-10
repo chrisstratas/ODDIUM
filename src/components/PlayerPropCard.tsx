@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Star, AlertTriangle } from "lucide-react";
 
 interface PlayerPropCardProps {
   player: string;
@@ -12,6 +12,11 @@ interface PlayerPropCardProps {
   underOdds: string;
   trend?: "up" | "down";
   isPopular?: boolean;
+  confidence?: number;
+  valueRating?: "high" | "medium" | "low";
+  recentForm?: string;
+  seasonAvg?: number;
+  hitRate?: number;
 }
 
 const PlayerPropCard = ({ 
@@ -22,10 +27,32 @@ const PlayerPropCard = ({
   overOdds, 
   underOdds, 
   trend,
-  isPopular = false 
+  isPopular = false,
+  confidence,
+  valueRating,
+  recentForm,
+  seasonAvg,
+  hitRate
 }: PlayerPropCardProps) => {
   const isPositiveOver = !overOdds.startsWith("-");
   const isPositiveUnder = !underOdds.startsWith("-");
+
+  const getValueColor = () => {
+    switch (valueRating) {
+      case "high": return "bg-positive-odds text-success-foreground";
+      case "medium": return "bg-warning text-warning-foreground";
+      case "low": return "bg-muted text-muted-foreground";
+      default: return "bg-secondary text-secondary-foreground";
+    }
+  };
+
+  const getValueIcon = () => {
+    switch (valueRating) {
+      case "high": return <Star className="w-3 h-3" />;
+      case "medium": return <AlertTriangle className="w-3 h-3" />;
+      default: return null;
+    }
+  };
 
   return (
     <Card className="bg-gradient-card border-border shadow-card hover:shadow-glow transition-all duration-300 hover:scale-[1.02]">
@@ -39,23 +66,52 @@ const PlayerPropCard = ({
                   Popular
                 </Badge>
               )}
+              {valueRating && (
+                <Badge className={`${getValueColor()} flex items-center gap-1`}>
+                  {getValueIcon()}
+                  {valueRating.toUpperCase()} VALUE
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">{team}</p>
           </div>
-          {trend && (
-            <div className="flex items-center">
-              {trend === "up" ? (
-                <TrendingUp className="w-4 h-4 text-positive-odds" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-negative-odds" />
-              )}
-            </div>
-          )}
+          <div className="flex flex-col items-end gap-1">
+            {trend && (
+              <div className="flex items-center">
+                {trend === "up" ? (
+                  <TrendingUp className="w-4 h-4 text-positive-odds" />
+                ) : (
+                  <TrendingDown className="w-4 h-4 text-negative-odds" />
+                )}
+              </div>
+            )}
+            {confidence && (
+              <Badge variant="outline" className="text-xs">
+                {confidence}%
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="mb-4">
-          <p className="text-sm text-muted-foreground mb-1">{stat}</p>
+          <div className="flex justify-between items-center mb-1">
+            <p className="text-sm text-muted-foreground">{stat}</p>
+            {seasonAvg && (
+              <p className="text-xs text-muted-foreground">Avg: {seasonAvg}</p>
+            )}
+          </div>
           <p className="text-lg font-bold text-foreground">{line}</p>
+          {recentForm && (
+            <p className="text-xs text-muted-foreground mt-1">L5: {recentForm}</p>
+          )}
+          {hitRate && (
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-muted-foreground">Hit Rate:</span>
+              <span className={`text-xs font-medium ${hitRate >= 60 ? 'text-positive-odds' : 'text-negative-odds'}`}>
+                {hitRate}%
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-2">
