@@ -3,6 +3,7 @@ import SportCategories from "@/components/SportCategories";
 import PlayerPropCard from "@/components/PlayerPropCard";
 import BettingInsights from "@/components/BettingInsights";
 import ValueFilters from "@/components/ValueFilters";
+import ParlayBuilder from "@/components/BetSlip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import heroImage from "@/assets/hero-sports.jpg";
@@ -116,10 +117,10 @@ const Index = () => {
                 <span className="text-foreground">Bet Smarter</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-6">
-                AI-powered analytics to identify the best player prop opportunities with data-driven insights.
+                Research player props, build same game parlays, and export to your favorite sportsbook.
               </p>
               <Button size="lg" className="bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow">
-                Find Value Bets
+                Start Building Parlays
               </Button>
             </div>
           </div>
@@ -131,7 +132,10 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Filters Sidebar */}
           <div className="lg:col-span-1 order-2 lg:order-1">
-            <ValueFilters />
+            <div className="space-y-6">
+              <ValueFilters />
+              <ParlayBuilder />
+            </div>
           </div>
 
           {/* Main Content */}

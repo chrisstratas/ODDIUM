@@ -117,7 +117,7 @@ const PlayerPropCard = ({
         <div className="grid grid-cols-2 gap-2">
           <Button 
             size="sm" 
-            className="bg-secondary hover:bg-secondary/80 text-foreground border border-border"
+            className="bg-secondary hover:bg-secondary/80 text-foreground border border-border hover:border-positive-odds transition-colors"
           >
             <div className="text-center w-full">
               <div className="text-xs text-muted-foreground">Over</div>
@@ -128,7 +128,7 @@ const PlayerPropCard = ({
           </Button>
           <Button 
             size="sm" 
-            className="bg-secondary hover:bg-secondary/80 text-foreground border border-border"
+            className="bg-secondary hover:bg-secondary/80 text-foreground border border-border hover:border-positive-odds transition-colors"
           >
             <div className="text-center w-full">
               <div className="text-xs text-muted-foreground">Under</div>
