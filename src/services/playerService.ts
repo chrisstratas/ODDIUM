@@ -7,35 +7,41 @@ export interface Player {
   jersey_number?: number;
 }
 
-// Ball Don't Lie API endpoints
-const NBA_API_BASE = 'https://www.balldontlie.io/api/v1';
-
-// Free alternative APIs for other sports
+// TheSportsDB API endpoints (CORS enabled, free)
 const SPORTS_APIS = {
-  NBA: 'https://www.balldontlie.io/api/v1/players',
-  // For demo purposes, we'll use a comprehensive static dataset for non-NBA sports
-  // In a real app, you'd integrate with specific APIs for each sport
+  NFL: 'https://www.thesportsdb.com/api/v1/json/3/search_all_players.php?l=NFL',
+  MLB: 'https://www.thesportsdb.com/api/v1/json/3/search_all_players.php?l=MLB',
+  NHL: 'https://www.thesportsdb.com/api/v1/json/3/search_all_players.php?l=NHL',
+  NBA: 'https://www.thesportsdb.com/api/v1/json/3/search_all_players.php?l=NBA',
+  WNBA: 'https://www.thesportsdb.com/api/v1/json/3/search_all_players.php?l=WNBA'
 };
 
 class PlayerService {
   private cache = new Map<string, Player[]>();
   private cacheExpiry = new Map<string, number>();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
   async searchPlayers(query: string, sport: string = 'All'): Promise<Player[]> {
     if (query.length < 2) return [];
 
     try {
-      if (sport === 'NBA' || sport === 'All') {
-        const nbaPlayers = await this.fetchNBAPlayers(query);
-        if (sport === 'NBA') return nbaPlayers;
+      if (sport === 'All') {
+        // Search across all sports
+        const allSports = ['NBA', 'NFL', 'MLB', 'NHL', 'WNBA'];
+        const promises = allSports.map(s => this.fetchSportPlayers(query, s));
+        const results = await Promise.allSettled(promises);
         
-        // If searching all sports, combine with static data for other sports
-        const otherSportsPlayers = this.getStaticPlayersForOtherSports(query, sport);
-        return [...nbaPlayers, ...otherSportsPlayers].slice(0, 20);
+        const allPlayers: Player[] = [];
+        results.forEach(result => {
+          if (result.status === 'fulfilled') {
+            allPlayers.push(...result.value);
+          }
+        });
+        
+        return allPlayers.slice(0, 20);
       } else {
-        // For non-NBA sports, use static comprehensive dataset
-        return this.getStaticPlayersForOtherSports(query, sport);
+        // Search specific sport
+        return await this.fetchSportPlayers(query, sport);
       }
     } catch (error) {
       console.error('Error searching players:', error);
@@ -44,8 +50,8 @@ class PlayerService {
     }
   }
 
-  private async fetchNBAPlayers(query: string): Promise<Player[]> {
-    const cacheKey = `nba_${query}`;
+  private async fetchSportPlayers(query: string, sport: string): Promise<Player[]> {
+    const cacheKey = `${sport}_${query}`;
     
     // Check cache first
     if (this.cache.has(cacheKey) && this.cacheExpiry.get(cacheKey)! > Date.now()) {
@@ -53,18 +59,32 @@ class PlayerService {
     }
 
     try {
-      const response = await fetch(`${SPORTS_APIS.NBA}?search=${encodeURIComponent(query)}&per_page=50`);
-      if (!response.ok) throw new Error('NBA API request failed');
+      const apiUrl = SPORTS_APIS[sport as keyof typeof SPORTS_APIS];
+      if (!apiUrl) {
+        throw new Error(`API not available for sport: ${sport}`);
+      }
+
+      const response = await fetch(apiUrl);
+      if (!response.ok) throw new Error(`${sport} API request failed`);
       
       const data = await response.json();
-      const players: Player[] = data.data.map((player: any) => ({
-        id: player.id,
-        name: `${player.first_name} ${player.last_name}`,
-        team: player.team.full_name,
-        sport: 'NBA',
-        position: player.position,
-        jersey_number: player.jersey_number
-      }));
+      let players: Player[] = [];
+
+      if (data.player) {
+        // TheSportsDB returns all players, we need to filter by query
+        players = data.player
+          .filter((player: any) => 
+            player.strPlayer.toLowerCase().includes(query.toLowerCase())
+          )
+          .slice(0, 15)
+          .map((player: any) => ({
+            id: parseInt(player.idPlayer),
+            name: player.strPlayer,
+            team: player.strTeam || 'Free Agent',
+            sport: sport,
+            position: player.strPosition || 'N/A'
+          }));
+      }
 
       // Cache the results
       this.cache.set(cacheKey, players);
@@ -72,8 +92,9 @@ class PlayerService {
 
       return players;
     } catch (error) {
-      console.error('NBA API error:', error);
-      return [];
+      console.error(`${sport} API error:`, error);
+      // Fallback to static data
+      return this.getStaticPlayersForOtherSports(query, sport);
     }
   }
 
