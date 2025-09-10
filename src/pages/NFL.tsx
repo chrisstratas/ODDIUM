@@ -5,6 +5,8 @@ import BettingInsights from "@/components/BettingInsights";
 import ValueFilters from "@/components/ValueFilters";
 import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
+import AdvancedPlayerAnalytics from "@/components/AdvancedPlayerAnalytics";
+import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -293,6 +295,14 @@ const NFL = () => {
                   <PlayerPropCard key={index} {...prop} />
                 ))}
               </div>
+            </div>
+
+            {/* Risk vs Reward Analysis */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">⚖️ Risk vs Reward</h2>
+              </div>
+              <RiskRewardAnalyzer availableBets={displayProps} />
             </div>
 
             {/* NFL Category Props */}
