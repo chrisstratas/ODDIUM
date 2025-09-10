@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { RotateCcw } from "lucide-react";
 import heroImage from "@/assets/hero-sports.jpg";
 
 const Index = () => {
@@ -24,8 +26,34 @@ const Index = () => {
     confidence: 'all'
   });
 
-  const { props: liveProps, loading, error } = useAnalytics(filters);
+  const { props: liveProps, loading, error, refetch } = useAnalytics(filters);
   const { props: sgpProps } = useAnalytics(sgpFilters);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const populateDatabase = async () => {
+    setRefreshing(true);
+    try {
+      console.log('Populating database with sample data...');
+      const response = await supabase.functions.invoke('fetch-live-analytics');
+      
+      if (response.error) {
+        console.error('Error populating database:', response.error);
+        throw response.error;
+      }
+      
+      console.log('Database populated successfully:', response.data);
+      
+      // Wait a moment for data to be inserted, then refetch
+      setTimeout(() => {
+        refetch();
+        setRefreshing(false);
+      }, 1500);
+      
+    } catch (err) {
+      console.error('Failed to populate database:', err);
+      setRefreshing(false);
+    }
+  };
 
   // Fallback to static data if live data is empty
   const fallbackProps = [
@@ -177,9 +205,20 @@ const Index = () => {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold">⭐ High Value Props</h2>
-                <Button variant="outline" size="sm">
-                  View All
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={populateDatabase}
+                    disabled={refreshing}
+                  >
+                    <RotateCcw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Loading...' : 'Load Live Data'}
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    View All
+                  </Button>
+                </div>
               </div>
               {loading && <div className="text-center py-4">Loading live analytics...</div>}
               {error && (
