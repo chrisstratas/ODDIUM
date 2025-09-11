@@ -127,10 +127,6 @@ const NFL = () => {
   ];
 
   const displayProps = liveProps.length > 0 ? liveProps : nflFallbackProps;
-  
-  // Debug logging
-  console.log('NFL Debug - Live props:', liveProps.length, 'Loading:', loading, 'Error:', error);
-  console.log('NFL Debug - Display props:', displayProps.length);
 
   const populateDatabase = async () => {
     setRefreshing(true);
@@ -256,10 +252,6 @@ const NFL = () => {
                   Live NFL analytics unavailable — showing sample props.
                 </div>
               )}
-              {/* Debug info */}
-              <div className="text-xs text-muted-foreground mb-2">
-                Debug: {displayProps.length} props available (Live: {liveProps.length}, Fallback: {nflFallbackProps.length})
-              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {displayProps.filter(prop => prop.valueRating === "high").length === 0 ? (
                   <div className="col-span-2 text-center py-8 text-muted-foreground">

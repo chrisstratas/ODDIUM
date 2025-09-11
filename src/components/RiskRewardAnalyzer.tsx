@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import BetRiskCard from './BetRiskCard';
 import { useRiskReward } from '@/hooks/useRiskReward';
 import { Shield, Target, Zap, TrendingUp, DollarSign, Calculator } from 'lucide-react';
 
@@ -48,6 +47,19 @@ const RiskRewardAnalyzer = ({ availableBets }: RiskRewardAnalyzerProps) => {
         return <Zap className="h-5 w-5 text-red-500" />;
       default:
         return null;
+    }
+  };
+
+  const getRiskBadgeColor = (level: string) => {
+    switch (level) {
+      case 'conservative':
+        return 'text-green-600';
+      case 'moderate':
+        return 'text-yellow-600';
+      case 'aggressive':
+        return 'text-red-600';
+      default:
+        return '';
     }
   };
 
@@ -150,19 +162,31 @@ const RiskRewardAnalyzer = ({ availableBets }: RiskRewardAnalyzerProps) => {
                   const bestMetrics = overMetrics.potentialPayout > underMetrics.potentialPayout ? overMetrics : underMetrics;
                   
                   return (
-                    <BetRiskCard
-                      key={bet.id || index}
-                      player={bet.player}
-                      stat={bet.stat}
-                      line={bet.line}
-                      overOdds={bet.overOdds}
-                      underOdds={bet.underOdds}
-                      confidence={bet.confidence}
-                      riskLevel={bestMetrics.riskLevel}
-                      potentialPayout={bestMetrics.potentialPayout}
-                      breakEvenRate={bestMetrics.breakEvenRate}
-                      category={bestMetrics.category}
-                    />
+                    <Card key={bet.id || index} className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-semibold">{bet.player}</h4>
+                            <p className="text-sm text-muted-foreground">{bet.stat} O/U {bet.line}</p>
+                          </div>
+                          <Badge variant="secondary" className={getRiskBadgeColor('conservative')}>
+                            Conservative
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span>Over: {bet.overOdds}</span>
+                          <span>Under: {bet.underOdds}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Badge variant={bet.valueRating === 'high' ? 'default' : 'secondary'}>
+                            {bet.confidence}% Confidence
+                          </Badge>
+                          <span className="text-sm font-medium text-primary">
+                            ${bestMetrics.potentialPayout.toFixed(0)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
@@ -176,19 +200,31 @@ const RiskRewardAnalyzer = ({ availableBets }: RiskRewardAnalyzerProps) => {
                   const bestMetrics = overMetrics.potentialPayout > underMetrics.potentialPayout ? overMetrics : underMetrics;
                   
                   return (
-                    <BetRiskCard
-                      key={bet.id || index}
-                      player={bet.player}
-                      stat={bet.stat}
-                      line={bet.line}
-                      overOdds={bet.overOdds}
-                      underOdds={bet.underOdds}
-                      confidence={bet.confidence}
-                      riskLevel={bestMetrics.riskLevel}
-                      potentialPayout={bestMetrics.potentialPayout}
-                      breakEvenRate={bestMetrics.breakEvenRate}
-                      category={bestMetrics.category}
-                    />
+                    <Card key={bet.id || index} className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-semibold">{bet.player}</h4>
+                            <p className="text-sm text-muted-foreground">{bet.stat} O/U {bet.line}</p>
+                          </div>
+                          <Badge variant="secondary" className={getRiskBadgeColor('moderate')}>
+                            Moderate
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span>Over: {bet.overOdds}</span>
+                          <span>Under: {bet.underOdds}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Badge variant={bet.valueRating === 'high' ? 'default' : 'secondary'}>
+                            {bet.confidence}% Confidence
+                          </Badge>
+                          <span className="text-sm font-medium text-primary">
+                            ${bestMetrics.potentialPayout.toFixed(0)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
@@ -202,19 +238,31 @@ const RiskRewardAnalyzer = ({ availableBets }: RiskRewardAnalyzerProps) => {
                   const bestMetrics = overMetrics.potentialPayout > underMetrics.potentialPayout ? overMetrics : underMetrics;
                   
                   return (
-                    <BetRiskCard
-                      key={bet.id || index}
-                      player={bet.player}
-                      stat={bet.stat}
-                      line={bet.line}
-                      overOdds={bet.overOdds}
-                      underOdds={bet.underOdds}
-                      confidence={bet.confidence}
-                      riskLevel={bestMetrics.riskLevel}
-                      potentialPayout={bestMetrics.potentialPayout}
-                      breakEvenRate={bestMetrics.breakEvenRate}
-                      category={bestMetrics.category}
-                    />
+                    <Card key={bet.id || index} className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-semibold">{bet.player}</h4>
+                            <p className="text-sm text-muted-foreground">{bet.stat} O/U {bet.line}</p>
+                          </div>
+                          <Badge variant="secondary" className={getRiskBadgeColor('aggressive')}>
+                            Aggressive
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span>Over: {bet.overOdds}</span>
+                          <span>Under: {bet.underOdds}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Badge variant={bet.valueRating === 'high' ? 'default' : 'secondary'}>
+                            {bet.confidence}% Confidence
+                          </Badge>
+                          <span className="text-sm font-medium text-primary">
+                            ${bestMetrics.potentialPayout.toFixed(0)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
