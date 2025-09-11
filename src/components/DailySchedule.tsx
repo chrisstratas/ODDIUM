@@ -203,6 +203,30 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
     return () => window.removeEventListener('globalDataRefresh', handleGlobalRefresh);
   }, []);
 
+  // Listen for real-time database updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('games-schedule-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'games_schedule'
+        },
+        (payload) => {
+          console.log('Real-time game schedule update:', payload);
+          // Refetch data when database changes
+          fetchScheduleFromDB();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sport, selectedDate]);
+
   useEffect(() => {
     fetchLiveData();
   }, [sport, selectedDate]);
