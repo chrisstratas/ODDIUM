@@ -91,17 +91,17 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
   const refreshSchedule = async () => {
     setRefreshing(true);
     try {
-      console.log('Refreshing schedule with multiple live score sources...');
+      console.log('Refreshing schedule with TheScore.com data...');
       
-      // Use Livesport.com as primary source
-      const livesportResponse = await supabase.functions.invoke('fetch-livesport-scores', {
+      // Use TheScore.com as primary source
+      const theScoreResponse = await supabase.functions.invoke('fetch-thescore-data', {
         body: { sport }
       });
       
-      if (livesportResponse.error) {
-        console.error('Livesport.com fetch error:', livesportResponse.error);
+      if (theScoreResponse.error) {
+        console.error('TheScore.com fetch error:', theScoreResponse.error);
         setDataSource('fallback');
-        // Fallback to regular schedule fetch
+        // Fallback to SportsData.io
         const fallbackResponse = await supabase.functions.invoke('fetch-sports-schedule', {
           body: { sport }
         });
@@ -112,7 +112,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         console.log('Fallback schedule refresh successful:', fallbackResponse.data);
       } else {
         setDataSource('live');
-        console.log('Livesport.com live scores refresh successful:', livesportResponse.data);
+        console.log('TheScore.com data refresh successful:', theScoreResponse.data);
       }
       
       // Wait a moment then refetch from DB
@@ -183,7 +183,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
           </CardTitle>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
-            {dataSource === 'live' ? 'Livesport.com' : 'SportsData.io fallback'}
+            {dataSource === 'live' ? 'TheScore.com' : 'SportsData.io fallback'}
           </div>
           <div className="flex items-center gap-2">
             <Popover>
@@ -217,7 +217,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
               disabled={refreshing}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Loading Livesport...' : 'Get Live Scores'}
+              {refreshing ? 'Loading TheScore...' : 'Get Live Scores'}
             </Button>
           </div>
         </div>
