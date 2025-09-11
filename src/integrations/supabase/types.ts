@@ -44,6 +44,69 @@ export type Database = {
         }
         Relationships: []
       }
+      games_schedule: {
+        Row: {
+          away_record: string | null
+          away_score: number | null
+          away_team: string
+          created_at: string
+          game_date: string
+          game_id: string
+          game_time: string
+          home_record: string | null
+          home_score: number | null
+          home_team: string
+          id: string
+          network: string | null
+          season_year: number
+          sport: string
+          status: string
+          updated_at: string
+          venue: string | null
+          week_number: number | null
+        }
+        Insert: {
+          away_record?: string | null
+          away_score?: number | null
+          away_team: string
+          created_at?: string
+          game_date: string
+          game_id: string
+          game_time: string
+          home_record?: string | null
+          home_score?: number | null
+          home_team: string
+          id?: string
+          network?: string | null
+          season_year?: number
+          sport: string
+          status?: string
+          updated_at?: string
+          venue?: string | null
+          week_number?: number | null
+        }
+        Update: {
+          away_record?: string | null
+          away_score?: number | null
+          away_team?: string
+          created_at?: string
+          game_date?: string
+          game_id?: string
+          game_time?: string
+          home_record?: string | null
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          network?: string | null
+          season_year?: number
+          sport?: string
+          status?: string
+          updated_at?: string
+          venue?: string | null
+          week_number?: number | null
+        }
+        Relationships: []
+      }
       live_odds: {
         Row: {
           confidence_score: number | null
