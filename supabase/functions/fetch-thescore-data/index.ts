@@ -61,6 +61,33 @@ serve(async (req) => {
       }
     };
 
+    // Official team rosters for each league to validate team assignments
+    const officialTeams = {
+      'NFL': ['Cardinals', 'Falcons', 'Ravens', 'Bills', 'Panthers', 'Bears', 'Bengals', 'Browns', 'Cowboys', 'Broncos', 'Lions', 'Packers', 'Texans', 'Colts', 'Jaguars', 'Chiefs', 'Raiders', 'Chargers', 'Rams', 'Dolphins', 'Vikings', 'Patriots', 'Saints', 'Giants', 'Jets', 'Eagles', 'Steelers', '49ers', 'Seahawks', 'Buccaneers', 'Titans', 'Commanders'],
+      'NBA': ['Hawks', 'Celtics', 'Nets', 'Hornets', 'Bulls', 'Cavaliers', 'Mavericks', 'Nuggets', 'Pistons', 'Warriors', 'Rockets', 'Pacers', 'Clippers', 'Lakers', 'Grizzlies', 'Heat', 'Bucks', 'Timberwolves', 'Pelicans', 'Knicks', 'Thunder', 'Magic', '76ers', 'Suns', 'Trail Blazers', 'Kings', 'Spurs', 'Raptors', 'Jazz', 'Wizards'],
+      'NHL': ['Ducks', 'Coyotes', 'Bruins', 'Sabres', 'Flames', 'Hurricanes', 'Blackhawks', 'Avalanche', 'Blue Jackets', 'Stars', 'Red Wings', 'Oilers', 'Panthers', 'Kings', 'Wild', 'Canadiens', 'Predators', 'Devils', 'Islanders', 'Rangers', 'Senators', 'Flyers', 'Penguins', 'Sharks', 'Kraken', 'Blues', 'Lightning', 'Maple Leafs', 'Canucks', 'Golden Knights', 'Capitals', 'Jets'],
+      'MLB': ['Diamondbacks', 'Braves', 'Orioles', 'Red Sox', 'Cubs', 'White Sox', 'Reds', 'Guardians', 'Rockies', 'Tigers', 'Astros', 'Royals', 'Angels', 'Dodgers', 'Marlins', 'Brewers', 'Twins', 'Mets', 'Yankees', 'Athletics', 'Phillies', 'Pirates', 'Padres', 'Giants', 'Mariners', 'Cardinals', 'Rays', 'Rangers', 'Blue Jays', 'Nationals'],
+      'WNBA': ['Dream', 'Sky', 'Sun', 'Fever', 'Aces', 'Sparks', 'Lynx', 'Liberty', 'Mercury', 'Storm', 'Wings', 'Mystics']
+    };
+
+    // Function to validate and correct team sport assignment
+    const validateTeamSport = (teamName: string, detectedSport: string) => {
+      // Normalize team name for comparison
+      const normalizedTeam = teamName.replace(/^(Los Angeles|New York|San Francisco|Golden State|Portland Trail|New Orleans)/, '').trim();
+      
+      for (const [sport, teams] of Object.entries(officialTeams)) {
+        if (teams.some(team => normalizedTeam.includes(team) || team.includes(normalizedTeam))) {
+          if (sport !== detectedSport) {
+            console.log(`Team assignment corrected: ${teamName} moved from ${detectedSport} to ${sport}`);
+          }
+          return sport;
+        }
+      }
+      
+      // If no match found, return the original sport
+      return detectedSport;
+    };
+
     let allGamesData: any[] = [];
 
     // TheScore.com URL mapping
@@ -128,12 +155,17 @@ serve(async (req) => {
             
             if (homeTeamMatch && awayTeamMatch) {
               const currentSeason = getCurrentSeason(sportType);
+              const homeTeam = homeTeamMatch[1].trim();
+              const awayTeam = awayTeamMatch[1].trim();
+              
+              // Validate team sport assignments
+              const correctedSport = validateTeamSport(homeTeam, sportType) || validateTeamSport(awayTeam, sportType) || sportType;
               
               return {
-                game_id: `thescore_${sportType.toLowerCase()}_${Date.now()}_${index}`,
-                sport: sportType,
-                home_team: homeTeamMatch[1].trim(),
-                away_team: awayTeamMatch[1].trim(),
+                game_id: `thescore_${correctedSport.toLowerCase()}_${Date.now()}_${index}`,
+                sport: correctedSport,
+                home_team: homeTeam,
+                away_team: awayTeam,
                 game_date: new Date().toISOString().split('T')[0],
                 game_time: new Date().toLocaleTimeString('en-US', {
                   hour: 'numeric',
@@ -183,11 +215,17 @@ serve(async (req) => {
                 continue;
               }
               
+              const homeTeam = gameData.home_team?.name || gameData.homeTeam?.name || 'Home Team';
+              const awayTeam = gameData.away_team?.name || gameData.awayTeam?.name || 'Away Team';
+              
+              // Validate team sport assignments
+              const correctedSport = validateTeamSport(homeTeam, sportType) || validateTeamSport(awayTeam, sportType) || sportType;
+              
               games.push({
-                game_id: `thescore_${sportType.toLowerCase()}_${gameData.id || key}`,
-                sport: sportType,
-                home_team: gameData.home_team?.name || gameData.homeTeam?.name || 'Home Team',
-                away_team: gameData.away_team?.name || gameData.awayTeam?.name || 'Away Team',
+                game_id: `thescore_${correctedSport.toLowerCase()}_${gameData.id || key}`,
+                sport: correctedSport,
+                home_team: homeTeam,
+                away_team: awayTeam,
                 game_date: gameData.date || gameData.game_date || new Date().toISOString().split('T')[0],
                 game_time: gameData.time || gameData.start_time || 'TBD',
                 venue: gameData.venue?.name || gameData.stadium || 'TheScore.com',
