@@ -12,6 +12,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const sportsDataApiKey = Deno.env.get('SPORTSDATA_API_KEY');
 const apiSportsKey = Deno.env.get('API_SPORTS_KEY');
+const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
 
 // API Sports endpoint mapping
 const apiSportsEndpoints = {
@@ -123,20 +124,48 @@ serve(async (req) => {
           }
         }
         
-        // Fallback to SportsData.io if API Sports fails
+        // Fallback to SportsData.io and Highlightly if API Sports fails
         if (responseData.length === 0) {
-          for (const endpoint of endpoints) {
+          // Try SportsData.io
+          if (sportsDataApiKey) {
+            const sportsDataEndpoints = [
+              `https://api.sportsdata.io/v3/${sport.endpoint}/scores/json/PlayerGameStatsByDate/2024-DEC-15`,
+              `https://api.sportsdata.io/v3/${sport.endpoint}/scores/json/PlayerSeasonStats/2024`,
+              `https://api.sportsdata.io/v3/${sport.endpoint}/scores/json/Players`
+            ];
+            
+            for (const endpoint of sportsDataEndpoints) {
+              try {
+                const response = await fetch(endpoint, {
+                  headers: { 'Ocp-Apim-Subscription-Key': sportsDataApiKey }
+                });
+                
+                if (response.ok) {
+                  responseData = await response.json();
+                  if (responseData && responseData.length > 0) break;
+                }
+              } catch (endpointError) {
+                console.log(`SportsData endpoint ${endpoint} failed, trying next...`);
+              }
+            }
+          }
+          
+          // Try Highlightly.net if SportsData.io fails
+          if (responseData.length === 0 && highlightlyApiKey) {
             try {
-              response = await fetch(endpoint, {
-                headers: { 'Ocp-Apim-Subscription-Key': sportsDataApiKey }
+              const response = await fetch(`https://api.highlightly.net/v1/${sport.name.toLowerCase()}/players`, {
+                headers: { 
+                  'Authorization': `Bearer ${highlightlyApiKey}`,
+                  'Content-Type': 'application/json'
+                }
               });
               
               if (response.ok) {
-                responseData = await response.json();
-                if (responseData && responseData.length > 0) break;
+                const highlightlyData = await response.json();
+                responseData = highlightlyData.players || highlightlyData || [];
               }
-            } catch (endpointError) {
-              console.log(`Endpoint ${endpoint} failed, trying next...`);
+            } catch (highlightlyError) {
+              console.log(`Highlightly ${sport.name} failed:`, highlightlyError);
             }
           }
         }
