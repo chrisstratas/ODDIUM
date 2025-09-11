@@ -9,31 +9,39 @@ const corsHeaders = {
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// Fetch from Highlightly.net
-const fetchFromHighlightly = async (sport: string) => {
-  if (!highlightlyApiKey) return [];
+// Create mock data for analytics (no external API dependency)
+const createSportData = (sport: string) => {
+  const mockData = {
+    'NBA': [
+      { PlayerName: 'LeBron James', Team: 'LAL', StatType: 'Points', Value: 25.5 },
+      { PlayerName: 'Stephen Curry', Team: 'GSW', StatType: 'Points', Value: 27.2 },
+      { PlayerName: 'Luka Doncic', Team: 'DAL', StatType: 'Points', Value: 28.1 },
+      { PlayerName: 'Giannis Antetokounmpo', Team: 'MIL', StatType: 'Points', Value: 29.8 },
+      { PlayerName: 'Jayson Tatum', Team: 'BOS', StatType: 'Points', Value: 26.9 }
+    ],
+    'NFL': [
+      { PlayerName: 'Josh Allen', Team: 'BUF', StatType: 'Passing Yards', Value: 285.5 },
+      { PlayerName: 'Patrick Mahomes', Team: 'KC', StatType: 'Passing Yards', Value: 295.5 },
+      { PlayerName: 'Lamar Jackson', Team: 'BAL', StatType: 'Passing Yards', Value: 245.5 },
+      { PlayerName: 'Dak Prescott', Team: 'DAL', StatType: 'Passing Yards', Value: 275.5 }
+    ],
+    'MLB': [
+      { PlayerName: 'Mookie Betts', Team: 'LAD', StatType: 'Hits', Value: 1.5 },
+      { PlayerName: 'Aaron Judge', Team: 'NYY', StatType: 'Hits', Value: 1.5 },
+      { PlayerName: 'Ronald Acuna Jr.', Team: 'ATL', StatType: 'Hits', Value: 1.5 },
+      { PlayerName: 'Mike Trout', Team: 'LAA', StatType: 'Hits', Value: 1.5 }
+    ],
+    'NHL': [
+      { PlayerName: 'Connor McDavid', Team: 'EDM', StatType: 'Points', Value: 1.5 },
+      { PlayerName: 'Leon Draisaitl', Team: 'EDM', StatType: 'Points', Value: 1.5 },
+      { PlayerName: 'Nathan MacKinnon', Team: 'COL', StatType: 'Points', Value: 1.5 },
+      { PlayerName: 'David Pastrnak', Team: 'BOS', StatType: 'Points', Value: 1.5 }
+    ]
+  };
   
-  try {
-    console.log(`Fetching ${sport} data from Highlightly...`);
-    const response = await fetch(`https://api.highlightly.net/v1/${sport.toLowerCase()}/players`, {
-      headers: { 
-        'Authorization': `Bearer ${highlightlyApiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return data.players || data || [];
-    }
-  } catch (error) {
-    console.error(`Highlightly ${sport} error:`, error);
-  }
-  
-  return [];
+  return mockData[sport as keyof typeof mockData] || [];
 };
 
 // Create mock data function for when API fails
@@ -70,16 +78,6 @@ serve(async (req) => {
     console.log('Starting live analytics fetch...');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    if (!highlightlyApiKey) {
-      console.error('Highlightly API key not found');
-      return new Response(JSON.stringify({ 
-        error: 'Highlightly API key not configured' 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     // Fetch player props from multiple sports
     const sports = [
@@ -95,23 +93,8 @@ serve(async (req) => {
       try {
         console.log(`Fetching ${sport.name} player props...`);
         
-        // Fetch from Highlightly.net as primary source
-        let responseData = await fetchFromHighlightly(sport.name);
-        
-        // Transform Highlightly data to our format
-        if (responseData.length > 0) {
-          responseData = responseData.map((player: any) => ({
-            PlayerName: player.name || `${player.firstName} ${player.lastName}`,
-            Team: player.team || player.teamAbbreviation || 'Unknown',
-            StatType: player.statType || 'Points',
-            Value: player.value || player.projection || Math.random() * 30 + 15
-          }));
-        }
-
-        if (!responseData || responseData.length === 0) {
-          console.error(`No data available for ${sport.name}, using mock data`);
-          responseData = createMockPropData(sport.name);
-        }
+        // Use mock data for analytics
+        let responseData = createSportData(sport.name);
 
         console.log(`Processing ${responseData.length} ${sport.name} records`);
 
@@ -156,9 +139,9 @@ serve(async (req) => {
               stat_type: prop.StatType,
               sport: sport.name,
               line: prop.Value || 0,
-              over_odds: prop.OverPayout ? `${prop.OverPayout > 0 ? '+' : ''}${prop.OverPayout}` : '+100',
-              under_odds: prop.UnderPayout ? `${prop.UnderPayout > 0 ? '+' : ''}${prop.UnderPayout}` : '-110',
-              sportsbook: prop.Sportsbook || 'Highlightly',
+              over_odds: '+100',
+              under_odds: '-110',
+              sportsbook: 'Mock Data',
               confidence_score: Math.floor(hitRate),
               value_rating: edge > 2 ? 'high' : edge > -1 ? 'medium' : 'low',
               last_updated: new Date().toISOString()
