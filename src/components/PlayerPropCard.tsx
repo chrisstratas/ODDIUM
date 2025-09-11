@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Star, AlertTriangle, User } from "lucide-react";
+import { TrendingUp, TrendingDown, Star, AlertTriangle, User, Target } from "lucide-react";
 import PlayerModal from "./PlayerModal";
+import { usePlayerMatchups } from "@/hooks/usePlayerMatchups";
 
 interface PlayerPropCardProps {
   player: string;
@@ -19,6 +20,7 @@ interface PlayerPropCardProps {
   recentForm?: string;
   seasonAvg?: number;
   hitRate?: number;
+  nextOpponent?: string;
 }
 
 const PlayerPropCard = ({ 
@@ -34,7 +36,8 @@ const PlayerPropCard = ({
   valueRating,
   recentForm,
   seasonAvg,
-  hitRate
+  hitRate,
+  nextOpponent
 }: PlayerPropCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isPositiveOver = !overOdds.startsWith("-");
@@ -47,6 +50,15 @@ const PlayerPropCard = ({
     if (stat.includes("Goals") || stat.includes("Saves") || (stat.includes("Assists") && team.includes("Rangers"))) return "NHL";
     return "NBA";
   };
+
+  // Get career stats vs next opponent
+  const { stats: vsOpponentStats } = usePlayerMatchups({
+    playerName: player,
+    opponentName: nextOpponent || '',
+    sport: getSport(),
+    statType: stat,
+    gameLimit: 10
+  });
 
   const getValueColor = () => {
     switch (valueRating) {
@@ -131,6 +143,37 @@ const PlayerPropCard = ({
               </div>
             )}
           </div>
+
+          {/* VS Next Opponent Section */}
+          {nextOpponent && vsOpponentStats && (
+            <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4 text-primary" />
+                <span className="text-xs font-medium text-foreground">vs {nextOpponent}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="text-center">
+                  <div className="text-muted-foreground">Avg</div>
+                  <div className="font-medium text-foreground">
+                    {vsOpponentStats.playerAverage.toFixed(1)}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-muted-foreground">Games</div>
+                  <div className="font-medium text-foreground">
+                    {vsOpponentStats.gamesPlayed}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-muted-foreground">Over%</div>
+                  <div className={`font-medium ${vsOpponentStats.overRate >= 60 ? 'text-positive-odds' : 'text-negative-odds'}`}>
+                    {vsOpponentStats.overRate.toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
 
           <div className="grid grid-cols-2 gap-2">
             <Button 
