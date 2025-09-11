@@ -4,7 +4,6 @@ import PlayerPropCard from "@/components/PlayerPropCard";
 import BettingInsights from "@/components/BettingInsights";
 import ValueFilters from "@/components/ValueFilters";
 import SGPCategoryFilters from "@/components/SGPCategoryFilters";
-import DataRefreshButton from "@/components/DataRefreshButton";
 import ParlayBuilder from "@/components/BetSlip";
 import AdvancedPlayerAnalytics from "@/components/AdvancedPlayerAnalyticsSimple";
 import { ParlayImageAnalyzer } from "@/components/ParlayImageAnalyzer";
@@ -224,7 +223,6 @@ const Index = () => {
           {/* Filters & Parlay Builder Sidebar */}
           <div className="lg:col-span-1 order-2 lg:order-1">
             <div className="space-y-6">
-              <DataRefreshButton sport="NFL" />
               <ValueFilters onFiltersChange={setFilters} />
                 <SGPCategoryFilters
                   sport={sgpFilters.sport}

@@ -7,6 +7,7 @@ import { Clock, MapPin, Tv, RefreshCw, CalendarIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRefresh } from "@/contexts/RefreshContext";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -37,27 +38,37 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dataSource, setDataSource] = useState<'live' | 'fallback' | 'api'>('api');
   const { refreshAll, isRefreshing } = useRefresh();
+  const { toast } = useToast();
 
   const fetchLiveData = async () => {
     try {
+      setLoading(true);
       setError(null);
       setDataSource('live');
       
-      console.log('Fetching live schedule data from Highlightly...');
+      console.log(`Fetching live ${sport} schedule data from Highlightly for 2025-2026 season...`);
       
       // Try to fetch live data from Highlightly
       const { data: liveData, error: liveError } = await supabase.functions.invoke('fetch-api-sports-schedule', {
-        body: { sport: sport === 'all' ? 'NBA' : sport }
+        body: { sport: sport === 'all' ? 'NFL' : sport }
       });
       
       if (liveError) {
         console.warn('Highlightly data fetch failed, falling back to database:', liveError);
         setDataSource('fallback');
-        return await fetchScheduleFromDB();
+        await fetchScheduleFromDB();
+        
+        toast({
+          title: "Live Data Unavailable",
+          description: `Using cached ${sport} data. Live data fetch failed.`,
+          variant: "destructive",
+        });
+        return;
       }
       
       if (liveData && liveData.success && liveData.games && liveData.games.length > 0) {
-        console.log('Successfully fetched live data from Highlightly');
+        console.log(`Successfully fetched live ${sport} data from Highlightly`);
+        
         const formattedGames: Game[] = liveData.games.map((game: any) => ({
           id: game.game_id || game.id,
           homeTeam: game.home_team,
@@ -78,18 +89,35 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
         const filteredGames = formattedGames.filter(game => game.date === selectedDateString);
         
         setGames(filteredGames);
+        setDataSource('live');
+        
+        toast({
+          title: "Live Data Updated",
+          description: `Successfully fetched ${filteredGames.length} ${sport} games from Highlightly`,
+        });
         return;
       }
       
       // If no live data, fall back to database
-      console.log('No live data available from Highlightly, falling back to database');
+      console.log(`No live ${sport} data available from Highlightly, falling back to database`);
       setDataSource('fallback');
       await fetchScheduleFromDB();
       
+      toast({
+        title: "Using Cached Data",
+        description: `No live ${sport} games found for selected date. Showing cached data.`,
+      });
+      
     } catch (err) {
-      console.error('Error fetching live data from Highlightly:', err);
+      console.error(`Error fetching live ${sport} data from Highlightly:`, err);
       setDataSource('fallback');
       await fetchScheduleFromDB();
+      
+      toast({
+        title: "Data Fetch Error",
+        description: `Failed to fetch live ${sport} data. Using cached data.`,
+        variant: "destructive",
+      });
     }
   };
 
