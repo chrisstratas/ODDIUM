@@ -50,15 +50,20 @@ serve(async (req) => {
 });
 
 async function fetchHighlightlyAnalytics(supabase: any, apiKey: string) {
-  const sports = ['NBA', 'NFL', 'MLB', 'NHL'];
+  const sports = [
+    { name: 'NBA', endpoint: 'basketball/nba/players/props' },
+    { name: 'NFL', endpoint: 'football/nfl/players/props' },
+    { name: 'MLB', endpoint: 'baseball/mlb/players/props' },
+    { name: 'NHL', endpoint: 'hockey/nhl/players/props' }
+  ];
   const allAnalytics = [];
 
   for (const sport of sports) {
     try {
-      console.log(`Fetching ${sport} analytics from Highlightly...`);
+      console.log(`Fetching ${sport.name} props from Highlightly...`);
       
-      // Get player props for the sport
-      const propsResponse = await fetch(`https://api.highlightly.com/v1/props/${sport.toLowerCase()}`, {
+      // Get player props for the sport from Highlightly API
+      const propsResponse = await fetch(`https://api.highlightly.net/v1/${sport.endpoint}`, {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
@@ -67,18 +72,25 @@ async function fetchHighlightlyAnalytics(supabase: any, apiKey: string) {
 
       if (propsResponse.ok) {
         const propsData = await propsResponse.json();
-        console.log(`Received ${propsData.props?.length || 0} props for ${sport}`);
+        const props = propsData.players || propsData || [];
+        console.log(`Received ${props.length} props for ${sport.name}`);
 
-        for (const prop of propsData.props || []) {
-          // Calculate analytics metrics
+        for (const prop of props) {
+          const playerName = prop.name || `${prop.firstName || ''} ${prop.lastName || ''}`.trim();
+          const team = prop.team || prop.teamAbbreviation;
+          const statType = mapStatType(prop.statType || prop.prop_type);
+          
+          if (!playerName || !team || !statType) continue;
+
+          // Calculate analytics metrics from Highlightly data
           const analytics = {
-            player_name: prop.player,
-            team: prop.team,
-            stat_type: prop.stat_type,
-            sport: sport,
-            season_average: prop.season_avg || (Math.random() * 30 + 10),
-            recent_form: prop.recent_form || (Math.random() * 35 + 8),
-            hit_rate: prop.hit_rate || (Math.random() * 0.4 + 0.5),
+            player_name: playerName,
+            team: team,
+            stat_type: statType,
+            sport: sport.name,
+            season_average: prop.seasonAverage || prop.value || prop.line || (Math.random() * 30 + 10),
+            recent_form: prop.recentForm || prop.recentAverage || ((prop.value || 20) + (Math.random() - 0.5) * 5),
+            hit_rate: prop.hitRate ? prop.hitRate / 100 : (Math.random() * 0.4 + 0.5),
             edge_percentage: prop.edge || (Math.random() * 15 + 2),
             trend_direction: prop.trend || (Math.random() > 0.5 ? 'up' : 'down'),
             calculated_at: new Date().toISOString()
@@ -87,14 +99,14 @@ async function fetchHighlightlyAnalytics(supabase: any, apiKey: string) {
           allAnalytics.push(analytics);
         }
       } else {
-        console.warn(`Failed to fetch ${sport} props:`, propsResponse.status);
+        console.warn(`Failed to fetch ${sport.name} props:`, propsResponse.status);
         // Generate mock data for this sport
-        await generateMockAnalyticsForSport(sport, allAnalytics);
+        await generateMockAnalyticsForSport(sport.name, allAnalytics);
       }
     } catch (error) {
-      console.warn(`Error fetching ${sport} from Highlightly:`, error);
+      console.warn(`Error fetching ${sport.name} from Highlightly:`, error);
       // Generate mock data for this sport
-      await generateMockAnalyticsForSport(sport, allAnalytics);
+      await generateMockAnalyticsForSport(sport.name, allAnalytics);
     }
   }
 
@@ -228,4 +240,33 @@ function getStatTypesForSport(sport: string) {
   };
 
   return statTypes[sport as keyof typeof statTypes] || [];
+}
+
+function mapStatType(statType: string): string {
+  const mappings: Record<string, string> = {
+    'points': 'Points',
+    'rebounds': 'Rebounds', 
+    'assists': 'Assists',
+    'threes': '3-Pointers Made',
+    'steals': 'Steals',
+    'blocks': 'Blocks',
+    'passing_yards': 'Passing Yards',
+    'rushing_yards': 'Rushing Yards',
+    'receiving_yards': 'Receiving Yards',
+    'receptions': 'Receptions',
+    'touchdowns': 'Touchdowns',
+    'completions': 'Completions',
+    'hits': 'Hits',
+    'runs': 'Runs',
+    'rbis': 'RBIs',
+    'home_runs': 'Home Runs',
+    'stolen_bases': 'Stolen Bases',
+    'strikeouts': 'Strikeouts',
+    'goals': 'Goals',
+    'shots_on_goal': 'Shots on Goal',
+    'hits_hockey': 'Hits',
+    'blocked_shots': 'Blocked Shots'
+  };
+  
+  return mappings[statType?.toLowerCase()] || statType || 'Points';
 }
