@@ -36,10 +36,12 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
     const now = new Date();
-    // Calculate start of NFL week (Sunday)
+    // Calculate start of NFL week (Thursday)
     const dayOffset = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    // NFL weeks start on Thursday (4), so we need to adjust
+    const daysFromThursday = (dayOffset + 3) % 7; // Convert to days from Thursday
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - dayOffset);
+    startOfWeek.setDate(now.getDate() - daysFromThursday);
     
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -164,11 +166,12 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
   }, [sport, dateRange]);
 
   const updateDateRange = (selectedDate: Date) => {
-    // For NFL and most sports, week starts on Sunday (day 0)
-    // Sunday = 0, Monday = 1, ..., Saturday = 6
+    // For NFL, week starts on Thursday (day 4)
+    // Sunday = 0, Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4, Friday = 5, Saturday = 6
     const startOfWeek = new Date(selectedDate);
     const dayOffset = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    startOfWeek.setDate(selectedDate.getDate() - dayOffset);
+    const daysFromThursday = (dayOffset + 3) % 7; // Convert to days from Thursday
+    startOfWeek.setDate(selectedDate.getDate() - daysFromThursday);
     
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
