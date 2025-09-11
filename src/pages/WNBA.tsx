@@ -227,6 +227,7 @@ const WNBA = () => {
                   onCategoryChange={(category) => setSgpFilters(prev => ({ ...prev, category }))}
                   onSortChange={(sortBy) => setSgpFilters(prev => ({ ...prev, sortBy }))}
                   onConfidenceChange={(confidence) => setSgpFilters(prev => ({ ...prev, confidence }))}
+                  onSportChange={() => {}} // No-op for individual sport pages
                   selectedCategory={sgpFilters.category}
                   selectedSort={sgpFilters.sortBy}
                   selectedConfidence={sgpFilters.confidence}

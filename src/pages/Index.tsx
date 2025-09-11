@@ -24,7 +24,8 @@ const Index = () => {
   const [sgpFilters, setSgpFilters] = useState({
     sortBy: 'value',
     category: 'all',
-    confidence: 'all'
+    confidence: 'all',
+    sport: 'NBA' // Add sport to SGP filters
   });
 
   const { props: liveProps, loading, error, refetch } = useAnalytics(filters);
@@ -214,10 +215,11 @@ const Index = () => {
             <div className="space-y-6">
               <ValueFilters onFiltersChange={setFilters} />
                 <SGPCategoryFilters
-                  sport="NBA"
+                  sport={sgpFilters.sport}
                   onCategoryChange={(category) => setSgpFilters(prev => ({ ...prev, category }))}
                   onSortChange={(sortBy) => setSgpFilters(prev => ({ ...prev, sortBy }))}
                   onConfidenceChange={(confidence) => setSgpFilters(prev => ({ ...prev, confidence }))}
+                  onSportChange={(sport) => setSgpFilters(prev => ({ ...prev, sport, category: 'all' }))} // Reset category on sport change
                   selectedCategory={sgpFilters.category}
                   selectedSort={sgpFilters.sortBy}
                   selectedConfidence={sgpFilters.confidence}

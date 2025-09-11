@@ -8,6 +8,7 @@ interface SGPCategoryFiltersProps {
   onCategoryChange: (category: string) => void;
   onSortChange: (sortBy: string) => void;
   onConfidenceChange: (confidence: string) => void;
+  onSportChange: (sport: string) => void; // Add sport change handler
   selectedCategory: string;
   selectedSort: string;
   selectedConfidence: string;
@@ -18,6 +19,7 @@ const SGPCategoryFilters = ({
   onCategoryChange,
   onSortChange,
   onConfidenceChange,
+  onSportChange, // Add sport change handler
   selectedCategory,
   selectedSort,
   selectedConfidence,
@@ -84,9 +86,26 @@ const SGPCategoryFilters = ({
   return (
     <Card className="bg-gradient-card border-border">
       <CardHeader>
-        <CardTitle className="text-lg">{sport} SGP Categories</CardTitle>
+        <CardTitle className="text-lg">SGP Categories</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* League Selection Dropdown */}
+        <div>
+          <label className="text-sm font-medium block mb-2">League</label>
+          <Select value={sport} onValueChange={onSportChange}>
+            <SelectTrigger className="bg-background border-border z-50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-background border-border z-50">
+              <SelectItem value="NBA">🏀 NBA</SelectItem>
+              <SelectItem value="NFL">🏈 NFL</SelectItem>
+              <SelectItem value="MLB">⚾ MLB</SelectItem>
+              <SelectItem value="NHL">🏒 NHL</SelectItem>
+              <SelectItem value="WNBA">🏀 WNBA</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Category Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Stat Category</label>
@@ -113,10 +132,10 @@ const SGPCategoryFilters = ({
         <div>
           <label className="text-sm font-medium block mb-2">Sort By</label>
           <Select value={selectedSort} onValueChange={onSortChange}>
-            <SelectTrigger className="bg-muted border-border">
+            <SelectTrigger className="bg-background border-border">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border-border z-40">
               <SelectItem value="value">Value Rating</SelectItem>
               <SelectItem value="confidence">Confidence</SelectItem>
               <SelectItem value="edge">Edge %</SelectItem>
@@ -130,10 +149,10 @@ const SGPCategoryFilters = ({
         <div>
           <label className="text-sm font-medium block mb-2">Min Confidence</label>
           <Select value={selectedConfidence} onValueChange={onConfidenceChange}>
-            <SelectTrigger className="bg-muted border-border">
+            <SelectTrigger className="bg-background border-border">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border-border z-40">
               <SelectItem value="all">All Confidence</SelectItem>
               <SelectItem value="60">60%+ Confidence</SelectItem>
               <SelectItem value="70">70%+ Confidence</SelectItem>
