@@ -11,6 +11,7 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const oddsApiKey = Deno.env.get('ODDS_API_KEY');
+const apiSportsKey = Deno.env.get('API_SPORTS_KEY');
 
 // Map our sports to The Odds API sport keys
 const SPORT_MAPPINGS = {
