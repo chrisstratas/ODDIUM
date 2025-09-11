@@ -7,6 +7,7 @@ import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
 
 import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
+import WeeklySchedule from "@/components/WeeklySchedule";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -235,6 +236,11 @@ const NHL = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3 order-1 lg:order-2">
+            {/* NHL Weekly Schedule */}
+            <div className="mb-8">
+              <WeeklySchedule sport="NHL" />
+            </div>
+
             {/* NHL Insights */}
             <div className="mb-8">
               <BettingInsights sport="NHL" />
