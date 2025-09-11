@@ -7,20 +7,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface SportsDataGame {
-  GameID: number;
-  Season: number;
-  Week?: number;
-  HomeTeam: string;
-  AwayTeam: string;
-  DateTime: string;
-  Status: string;
-  HomeTeamScore?: number;
-  AwayTeamScore?: number;
-  Stadium?: string;
-  Channel?: string;
-  HomeTeamRecord?: string;
-  AwayTeamRecord?: string;
+interface HighlightlyGame {
+  id: string;
+  sport: string;
+  home_team: string;
+  away_team: string;
+  game_date: string;
+  game_time: string;
+  venue?: string;
+  network?: string;
+  status: string;
+  home_score?: number;
+  away_score?: number;
+  week_number?: number;
+  season_year: number;
 }
 
 serve(async (req) => {
@@ -53,40 +53,83 @@ serve(async (req) => {
 
     let gamesData: any[] = [];
 
-    // Helper function to fetch from Fox Sports API
-    const fetchFoxSportsData = async (sport: string) => {
+    // Fetch from Highlightly API
+    const fetchHighlightlySchedule = async (sportType: string) => {
       try {
-        const sportUrls = {
-          'NFL': 'https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nfl',
-          'MLB': 'https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/mlb',
-          'NBA': 'https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba',
-          'NHL': 'https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nhl'
-        };
-
-        if (!sportUrls[sport as keyof typeof sportUrls]) return [];
-
-        console.log(`Fetching Fox Sports ${sport} data...`);
-        const response = await fetch(sportUrls[sport as keyof typeof sportUrls]);
+        const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
         
-        if (!response.ok) {
-          console.error(`Fox Sports ${sport} fetch failed:`, response.status);
+        if (!highlightlyApiKey) {
+          console.log('No Highlightly API key found, using mock data');
           return [];
         }
 
-        const data = await response.text();
-        // Parse RSS XML data here - for now using fallback
-        console.log(`Fox Sports ${sport} RSS data received, length:`, data.length);
-        return [];
+        console.log(`Fetching ${sportType} schedule from Highlightly...`);
+        
+        const response = await fetch(`https://api.highlightly.com/v1/sports/${sportType.toLowerCase()}/schedule`, {
+          headers: {
+            'Authorization': `Bearer ${highlightlyApiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          console.error(`Highlightly ${sportType} schedule fetch failed:`, response.status, await response.text());
+          return [];
+        }
+
+        const data = await response.json();
+        console.log(`Received ${data.games?.length || 0} ${sportType} games from Highlightly`);
+
+        // Transform Highlightly data to our format
+        return (data.games || []).map((game: any) => ({
+          game_id: `highlightly_${sportType.toLowerCase()}_${game.id}`,
+          sport: sportType,
+          home_team: game.home_team?.name || game.home_team,
+          away_team: game.away_team?.name || game.away_team,
+          game_date: game.game_date || game.date,
+          game_time: game.game_time || game.time || '12:00 PM ET',
+          venue: game.venue?.name || game.venue,
+          network: game.broadcast?.network || game.network,
+          status: game.status || 'scheduled',
+          home_score: game.home_score,
+          away_score: game.away_score,
+          week_number: game.week_number || game.week,
+          season_year: game.season_year || new Date().getFullYear(),
+          home_record: game.home_team?.record,
+          away_record: game.away_team?.record
+        }));
+
       } catch (error) {
-        console.error(`Error fetching Fox Sports ${sport}:`, error);
+        console.error(`Error fetching Highlightly ${sportType} schedule:`, error);
         return [];
       }
     };
 
-    // Generate mock NFL games instead of API calls
-    if (sport === 'all' || sport === 'NFL') {
-      const mockNflGames = [
-        {
+    // Fetch from Highlightly API for all sports
+    const sports = sport === 'all' ? ['NFL', 'NBA', 'MLB', 'NHL', 'WNBA'] : [sport];
+    
+    for (const sportType of sports) {
+      try {
+        const highlightlyGames = await fetchHighlightlySchedule(sportType);
+        if (highlightlyGames.length > 0) {
+          gamesData.push(...highlightlyGames);
+        } else {
+          // Fallback to mock data if Highlightly returns no data
+          const mockGames = getMockGamesForSport(sportType);
+          gamesData.push(...mockGames);
+        }
+      } catch (error) {
+        console.error(`Error processing ${sportType}:`, error);
+        // Fallback to mock data on error
+        const mockGames = getMockGamesForSport(sportType);
+        gamesData.push(...mockGames);
+      }
+    }
+
+    // Mock data fallback function
+    function getMockGamesForSport(sportType: string) {
+      const mockData: { [key: string]: any[] } = {
+        'NFL': [{
           game_id: 'nfl_mock_1',
           sport: 'NFL',
           home_team: 'Buffalo Bills',
@@ -102,15 +145,8 @@ serve(async (req) => {
           away_score: null,
           week_number: 2,
           season_year: 2025
-        }
-      ];
-      gamesData.push(...mockNflGames);
-    }
-
-    // Generate mock MLB games
-    if (sport === 'all' || sport === 'MLB') {
-      const mockMlbGames = [
-        {
+        }],
+        'MLB': [{
           game_id: 'mlb_mock_1',
           sport: 'MLB',
           home_team: 'Los Angeles Dodgers',
@@ -125,15 +161,8 @@ serve(async (req) => {
           home_score: null,
           away_score: null,
           season_year: 2025
-        }
-      ];
-      gamesData.push(...mockMlbGames);
-    }
-
-    // For NBA and NHL (preseason), use current mock data since API might not have current preseason data
-    if (sport === 'all' || sport === 'NBA') {
-      const mockNbaGames = [
-        {
+        }],
+        'NBA': [{
           game_id: 'nba_mock_1',
           sport: 'NBA',
           home_team: 'Lakers',
@@ -146,29 +175,8 @@ serve(async (req) => {
           away_record: 'Preseason',
           status: 'scheduled',
           season_year: 2025
-        },
-        {
-          game_id: 'nba_mock_2',
-          sport: 'NBA',
-          home_team: 'Celtics',
-          away_team: 'Heat',
-          game_date: '2025-09-16',
-          game_time: '8:00 PM ET',
-          venue: 'TD Garden',
-          network: 'TNT',
-          home_record: 'Preseason',
-          away_record: 'Preseason',
-          status: 'scheduled',
-          season_year: 2025
-        }
-      ];
-      gamesData.push(...mockNbaGames);
-    }
-
-    // Generate mock NHL games  
-    if (sport === 'all' || sport === 'NHL') {
-      const mockNhlGames = [
-        {
+        }],
+        'NHL': [{
           game_id: 'nhl_mock_1',
           sport: 'NHL',
           home_team: 'Rangers',
@@ -181,15 +189,8 @@ serve(async (req) => {
           away_record: 'Preseason',
           status: 'scheduled',
           season_year: 2025
-        }
-      ];
-      gamesData.push(...mockNhlGames);
-    }
-
-    // WNBA with Fox Sports branding
-    if (sport === 'all' || sport === 'WNBA') {
-      const mockWnbaGames = [
-        {
+        }],
+        'WNBA': [{
           game_id: 'wnba_mock_1',
           sport: 'WNBA',
           home_team: 'Las Vegas Aces',
@@ -204,9 +205,9 @@ serve(async (req) => {
           home_score: 87,
           away_score: 92,
           season_year: 2025
-        }
-      ];
-      gamesData.push(...mockWnbaGames);
+        }]
+      };
+      return mockData[sportType] || [];
     }
 
     // Insert or update games in database
