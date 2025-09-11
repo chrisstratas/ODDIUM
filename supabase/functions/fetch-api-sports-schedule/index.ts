@@ -7,6 +7,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface HighlightlyGame {
+  game_id: string;
+  sport: string;
+  home_team: string;
+  away_team: string;
+  game_date: string;
+  game_time: string;
+  venue?: string;
+  status: string;
+  season_year: number;
+  week_number?: number;
+  home_score?: number;
+  away_score?: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,246 +30,167 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
+    const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     const { sport } = await req.json().catch(() => ({ sport: 'all' }));
     
-    console.log(`Generating mock ${sport} schedule data...`);
+    console.log(`Fetching ${sport} daily schedule data from Highlightly for 2025-2026 season...`);
 
-    // Fetch from SPORTSBLAZE API
-    const fetchSportsBlazeSchedule = async (sportType: string) => {
+    if (!highlightlyApiKey) {
+      console.error('HIGHLIGHTLY_API_KEY not found');
+      return new Response(JSON.stringify({ 
+        error: 'Highlightly API key not configured',
+        message: 'Please configure HIGHLIGHTLY_API_KEY in Supabase secrets'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Function to fetch daily schedule from Highlightly API
+    const fetchHighlightlyDailySchedule = async (sportType: string) => {
+      const sportEndpoints: Record<string, string> = {
+        'NBA': 'nba',
+        'NFL': 'nfl',
+        'MLB': 'mlb', 
+        'NHL': 'nhl',
+        'WNBA': 'wnba'
+      };
+
+      const endpoint = sportEndpoints[sportType];
+      if (!endpoint) {
+        console.log(`No Highlightly endpoint found for ${sportType}`);
+        return [];
+      }
+
       try {
-        const sportsBlazeApiKey = Deno.env.get('SPORTSBLAZE_API_KEY');
+        console.log(`Fetching ${sportType} daily schedule from Highlightly...`);
         
-        if (!sportsBlazeApiKey) {
-          console.log('No SPORTSBLAZE API key found, using mock data');
-          return [];
-        }
-
-        console.log(`Fetching ${sportType} schedule from SPORTSBLAZE...`);
+        // Get today's date for daily schedule
+        const today = new Date().toISOString().split('T')[0];
         
-        const response = await fetch(`https://api.sportsblaze.net/v1/schedule/${sportType.toLowerCase()}`, {
+        const response = await fetch(`https://api.highlightly.com/v1/${endpoint}/schedule/daily?date=${today}&season=2025-2026`, {
           headers: {
-            'X-API-Key': sportsBlazeApiKey,
+            'Authorization': `Bearer ${highlightlyApiKey}`,
             'Content-Type': 'application/json'
-          }
+          },
+          method: 'GET'
         });
 
         if (!response.ok) {
-          console.error(`SPORTSBLAZE ${sportType} schedule fetch failed:`, response.status, await response.text());
+          console.error(`Highlightly ${sportType} daily schedule fetch failed:`, response.status, await response.text());
           return [];
         }
 
         const data = await response.json();
-        console.log(`Received ${data.games?.length || 0} ${sportType} games from SPORTSBLAZE`);
+        console.log(`Received ${data.games?.length || 0} daily games from Highlightly for ${sportType} 2025-2026 season`);
 
-        // Transform SPORTSBLAZE data to our format
-        return (data.games || []).map((game: any) => ({
-          id: crypto.randomUUID(),
-          game_id: `sportsblaze_${sportType.toLowerCase()}_${game.id}`,
-          sport: sportType,
-          home_team: game.home_team?.name || game.home_team,
-          away_team: game.away_team?.name || game.away_team,
-          game_date: game.game_date || game.date,
-          game_time: game.game_time || game.time || '12:00 PM ET',
-          venue: game.venue?.name || game.venue,
-          network: game.broadcast?.network || game.network,
-          status: game.status || 'scheduled',
-          home_score: game.home_score,
-          away_score: game.away_score,
-          week_number: game.week_number || game.week,
-          season_year: game.season_year || new Date().getFullYear(),
-          home_record: game.home_team?.record,
-          away_record: game.away_team?.record,
-          data_source: 'sportsblaze'
-        }));
+        const transformedGames = [];
+        
+        for (const game of data.games || []) {
+          transformedGames.push({
+            id: crypto.randomUUID(),
+            game_id: game.game_id || `highlightly_daily_${sportType.toLowerCase()}_${Date.now()}_${Math.random()}`,
+            sport: sportType,
+            home_team: game.home_team || game.home?.name || 'Home Team',
+            away_team: game.away_team || game.away?.name || 'Away Team',
+            game_date: game.game_date || game.date || today,
+            game_time: game.game_time || game.time || 'TBD',
+            venue: game.venue || game.stadium || null,
+            network: game.network || game.broadcast || null,
+            home_record: game.home_record || null,
+            away_record: game.away_record || null,
+            status: game.status || 'scheduled',
+            home_score: game.home_score || null,
+            away_score: game.away_score || null,
+            season_year: 2025, // Force 2025-2026 season
+            week_number: game.week_number || game.week || null,
+            data_source: 'highlightly_daily'
+          });
+        }
 
+        return transformedGames;
       } catch (error) {
-        console.error(`Error fetching SPORTSBLAZE ${sportType} schedule:`, error);
+        console.error(`Error fetching ${sportType} daily schedule from Highlightly:`, error);
         return [];
       }
     };
 
-    let gamesData: any[] = [];
+    let allGames: HighlightlyGame[] = [];
 
-    // Fetch data from SPORTSBLAZE for requested sports
-    const sportsToFetch = sport === 'all' ? ['NFL', 'NBA', 'MLB', 'NHL', 'WNBA'] : [sport];
-
-    for (const sportType of sportsToFetch) {
-      try {
-        const sportsBlazeGames = await fetchSportsBlazeSchedule(sportType);
-        if (sportsBlazeGames.length > 0) {
-          gamesData.push(...sportsBlazeGames);
-        } else {
-          // Fallback to mock data if SPORTSBLAZE returns no data
-          const mockGames = createMockGames(sportType);
-          gamesData.push(...mockGames);
-        }
-      } catch (error) {
-        console.error(`Error processing ${sportType}:`, error);
-        // Fallback to mock data on error
-        const mockGames = createMockGames(sportType);
-        gamesData.push(...mockGames);
+    // Determine which sports to fetch
+    if (sport === 'all') {
+      const sports = ['NBA', 'NFL', 'MLB', 'NHL', 'WNBA'];
+      
+      for (const sportType of sports) {
+        const gameData = await fetchHighlightlyDailySchedule(sportType);
+        allGames = allGames.concat(gameData);
       }
+    } else {
+      const gameData = await fetchHighlightlyDailySchedule(sport.toUpperCase());
+      allGames = allGames.concat(gameData);
     }
 
-    // Mock game data fallback function
-    const createMockGames = (sportType: string) => {
-      const mockGames = {
-        'NFL': [
-          {
-            id: crypto.randomUUID(),
-            game_id: `sportsblaze_mock_nfl_1`,
-            sport: 'NFL',
-            home_team: 'Buffalo Bills',
-            away_team: 'Miami Dolphins',
-            game_date: '2025-09-15',
-            game_time: '1:00 PM ET',
-            venue: 'Highmark Stadium',
-            network: 'CBS',
-            home_record: '0-0',
-            away_record: '0-0',
-            status: 'scheduled',
-            home_score: null,
-            away_score: null,
-            season_year: 2025,
-            week_number: 2,
-            data_source: 'sportsblaze_mock'
-          }
-        ],
-        'NBA': [
-          {
-            id: crypto.randomUUID(),
-            game_id: `sportsblaze_mock_nba_1`,
-            sport: 'NBA',
-            home_team: 'Los Angeles Lakers',
-            away_team: 'Golden State Warriors',
-            game_date: '2025-09-15',
-            game_time: '7:30 PM PT',
-            venue: 'Crypto.com Arena',
-            network: 'ESPN',
-            home_record: 'Preseason',
-            away_record: 'Preseason',
-            status: 'scheduled',
-            home_score: null,
-            away_score: null,
-            season_year: 2025,
-            week_number: null,
-            data_source: 'sportsblaze_mock'
-          }
-        ],
-        'MLB': [
-          {
-            id: crypto.randomUUID(),
-            game_id: `sportsblaze_mock_mlb_1`,
-            sport: 'MLB',
-            home_team: 'Los Angeles Dodgers',
-            away_team: 'San Francisco Giants',
-            game_date: '2025-09-15',
-            game_time: '7:10 PM PT',
-            venue: 'Dodger Stadium',
-            network: 'Fox Sports',
-            home_record: '98-64',
-            away_record: '80-82',
-            status: 'scheduled',
-            home_score: null,
-            away_score: null,
-            season_year: 2025,
-            week_number: null,
-            data_source: 'sportsblaze_mock'
-          }
-        ],
-        'NHL': [
-          {
-            id: crypto.randomUUID(),
-            game_id: `sportsblaze_mock_nhl_1`,
-            sport: 'NHL',
-            home_team: 'New York Rangers',
-            away_team: 'New Jersey Devils',
-            game_date: '2025-09-15',
-            game_time: '7:00 PM ET',
-            venue: 'Madison Square Garden',
-            network: 'ESPN',
-            home_record: 'Preseason',
-            away_record: 'Preseason',
-            status: 'scheduled',
-            home_score: null,
-            away_score: null,
-            season_year: 2025,
-            week_number: null,
-            data_source: 'sportsblaze_mock'
-          }
-        ],
-        'WNBA': [
-          {
-            id: crypto.randomUUID(),
-            game_id: `sportsblaze_mock_wnba_1`,
-            sport: 'WNBA',
-            home_team: 'Las Vegas Aces',
-            away_team: 'New York Liberty',
-            game_date: '2025-09-15',
-            game_time: '9:00 PM ET',
-            venue: 'Michelob ULTRA Arena',
-            network: 'ESPN',
-            home_record: '32-8',
-            away_record: '30-10',
-            status: 'scheduled',
-            home_score: null,
-            away_score: null,
-            season_year: 2025,
-            week_number: null,
-            data_source: 'sportsblaze_mock'
-          }
-        ]
-      };
-      
-      return mockGames[sportType as keyof typeof mockGames] || [];
-    }
-
-    // Insert or update games in database
-    if (gamesData.length > 0) {
-      console.log(`Upserting ${gamesData.length} games from API Sports...`);
-      
-      // Remove duplicates
-      const uniqueGames = gamesData.filter((game, index, self) => 
-        index === self.findIndex(g => g.game_id === game.game_id)
-      );
-      
-      const { error } = await supabase
-        .from('games_schedule')
-        .upsert(uniqueGames, { 
-          onConflict: 'game_id'
-        });
-
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
-      }
-
-      console.log(`Successfully updated ${uniqueGames.length} mock games`);
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        gamesUpdated: gamesData.length,
-        message: `Updated ${gamesData.length} mock games`,
-        source: 'Mock Data'
-      }),
-      {
+    if (allGames.length === 0) {
+      console.log('No daily schedule data available from Highlightly for 2025-2026 season');
+      return new Response(JSON.stringify({ 
+        success: false, 
+        message: 'No daily schedule data available for 2025-2026 season',
+        games_updated: 0 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      });
+    }
+
+    // Remove duplicates based on game_id
+    const uniqueGames = allGames.filter((game, index, self) => 
+      index === self.findIndex(g => g.game_id === game.game_id)
     );
+
+    console.log(`Found ${uniqueGames.length} unique daily games for 2025-2026 season`);
+
+    // Upsert schedule data to Supabase
+    const { data, error } = await supabase
+      .from('games_schedule')
+      .upsert(uniqueGames, { 
+        onConflict: 'game_id',
+        ignoreDuplicates: false 
+      });
+
+    if (error) {
+      console.error('Error upserting daily schedule data:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to update daily schedule',
+        details: error.message 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`Successfully updated ${uniqueGames.length} daily games in schedule`);
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: `Updated daily schedule with ${uniqueGames.length} games for 2025-2026 season from Highlightly`,
+      games_updated: uniqueGames.length,
+      season: '2025-2026',
+      source: 'Highlightly Daily',
+      date: new Date().toISOString().split('T')[0]
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
     console.error('Error in fetch-api-sports-schedule:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({ 
+      error: 'Failed to fetch daily schedule',
+      details: error.message 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
