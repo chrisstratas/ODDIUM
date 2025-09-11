@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Star, AlertTriangle, User, Target } from "lucide-react";
 import PlayerModal from "./PlayerModal";
 import { usePlayerMatchups } from "@/hooks/usePlayerMatchups";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerPropCardProps {
   player: string;
@@ -51,13 +52,43 @@ const PlayerPropCard = ({
     return "NBA";
   };
 
+  // Resolve next opponent if not provided
+  const [resolvedOpponent, setResolvedOpponent] = useState<string | null>(nextOpponent || null);
+
+  useEffect(() => {
+    if (resolvedOpponent || !team) return;
+    const fetchNextOpponent = async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error } = await supabase
+          .from('games_schedule')
+          .select('home_team, away_team, game_date')
+          .eq('sport', getSport())
+          .gte('game_date', today)
+          .order('game_date', { ascending: true })
+          .limit(20);
+        if (error) {
+          console.error('Error fetching schedule for next opponent:', error);
+          return;
+        }
+        const match = (data || []).find((g: any) => g.home_team === team || g.away_team === team);
+        if (match) {
+          setResolvedOpponent(match.home_team === team ? match.away_team : match.home_team);
+        }
+      } catch (e) {
+        console.error('Next opponent lookup failed:', e);
+      }
+    };
+    fetchNextOpponent();
+  }, [team, stat]);
+
   // Get career stats vs next opponent
   const { stats: vsOpponentStats } = usePlayerMatchups({
     playerName: player,
-    opponentName: nextOpponent || '',
+    opponentName: resolvedOpponent || '',
     sport: getSport(),
     statType: stat,
-    gameLimit: 10
+    gameLimit: 50
   });
 
   const getValueColor = () => {
@@ -145,11 +176,11 @@ const PlayerPropCard = ({
           </div>
 
           {/* VS Next Opponent Section */}
-          {nextOpponent && vsOpponentStats && (
+          {resolvedOpponent && vsOpponentStats && (
             <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4 text-primary" />
-                <span className="text-xs font-medium text-foreground">vs {nextOpponent}</span>
+                <span className="text-xs font-medium text-foreground">vs {resolvedOpponent}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="text-center">
@@ -173,7 +204,15 @@ const PlayerPropCard = ({
               </div>
             </div>
           )}
-
+          {resolvedOpponent && !vsOpponentStats && (
+            <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-primary" />
+                <span className="text-xs font-medium text-foreground">vs {resolvedOpponent}</span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-2">No matchup data found.</div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <Button 
