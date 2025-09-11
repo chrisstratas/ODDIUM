@@ -38,6 +38,57 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
   const [dataSource, setDataSource] = useState<'live' | 'fallback' | 'api'>('api');
   const { refreshAll, isRefreshing } = useRefresh();
 
+  const fetchLiveData = async () => {
+    try {
+      setError(null);
+      setDataSource('live');
+      
+      console.log('Fetching live schedule data...');
+      
+      // Try to fetch live data from TheScore
+      const { data: liveData, error: liveError } = await supabase.functions.invoke('fetch-thescore-data', {
+        body: { sport: sport === 'all' ? 'NBA' : sport }
+      });
+      
+      if (liveError) {
+        console.warn('Live data fetch failed, falling back to database:', liveError);
+        setDataSource('fallback');
+        return await fetchScheduleFromDB();
+      }
+      
+      if (liveData && liveData.games && liveData.games.length > 0) {
+        console.log('Successfully fetched live data');
+        const formattedGames: Game[] = liveData.games.map((game: any) => ({
+          id: game.id,
+          homeTeam: game.homeTeam,
+          awayTeam: game.awayTeam,
+          date: game.date,
+          time: game.time,
+          venue: game.venue || '',
+          network: '',
+          homeRecord: '',
+          awayRecord: '',
+          status: game.status as 'scheduled' | 'live' | 'final',
+          homeScore: game.homeScore,
+          awayScore: game.awayScore
+        }));
+        
+        setGames(formattedGames);
+        return;
+      }
+      
+      // If no live data, fall back to database
+      console.log('No live data available, falling back to database');
+      setDataSource('fallback');
+      await fetchScheduleFromDB();
+      
+    } catch (err) {
+      console.error('Error fetching live data:', err);
+      setDataSource('fallback');
+      await fetchScheduleFromDB();
+    }
+  };
+
   const fetchScheduleFromDB = async () => {
     try {
       setError(null);
@@ -113,7 +164,7 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
   // Listen for global refresh events
   useEffect(() => {
     const handleGlobalRefresh = () => {
-      setTimeout(() => fetchScheduleFromDB(), 2000);
+      setTimeout(() => fetchLiveData(), 2000);
     };
     
     window.addEventListener('globalDataRefresh', handleGlobalRefresh);
@@ -121,7 +172,7 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
   }, []);
 
   useEffect(() => {
-    fetchScheduleFromDB();
+    fetchLiveData();
   }, [sport, selectedDate]);
 
   const updateSelectedDate = (date: Date) => {
