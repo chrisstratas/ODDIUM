@@ -167,10 +167,6 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
             <span className="text-2xl">{getSportIcon()}</span>
             {sport} Daily Schedule
           </CardTitle>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
-            {dataSource === 'live' ? 'TheScore.com' : 'SportsData.io fallback'}
-          </div>
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
