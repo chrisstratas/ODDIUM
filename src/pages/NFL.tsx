@@ -5,7 +5,7 @@ import BettingInsights from "@/components/BettingInsights";
 import ValueFilters from "@/components/ValueFilters";
 import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
-
+import SportsInsights from "@/components/SportsInsights";
 import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
 import WeeklySchedule from "@/components/WeeklySchedule";
 import { Button } from "@/components/ui/button";
@@ -224,6 +224,11 @@ const NFL = () => {
             {/* NFL Weekly Schedule */}
             <div className="mb-8">
               <WeeklySchedule sport="NFL" />
+            </div>
+
+            {/* AI Sports Insights */}
+            <div className="mb-8">
+              <SportsInsights sport="NFL" />
             </div>
 
             {/* NFL Insights */}
