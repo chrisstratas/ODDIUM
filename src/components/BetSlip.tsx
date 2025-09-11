@@ -3,30 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X, ExternalLink, Share2, Copy } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSGP } from "@/contexts/SGPContext";
 
 const ParlayBuilder = () => {
-  const picks = [
-    {
-      id: 1,
-      player: "LeBron James",
-      prop: "Points",
-      selection: "Over 25.5",
-      odds: "+110",
-      confidence: 85
-    },
-    {
-      id: 2,
-      player: "Stephen Curry", 
-      prop: "3-Pointers Made",
-      selection: "Over 4.5",
-      odds: "-105",
-      confidence: 78
-    }
-  ];
-
+  const { picks, removePick, clearPicks, getEstimatedOdds, getAverageConfidence } = useSGP();
   const isEmpty = picks.length === 0;
-  const estimatedOdds = picks.length > 1 ? "+485" : picks[0]?.odds || "+100";
-  const avgConfidence = picks.length > 0 ? Math.round(picks.reduce((acc, pick) => acc + pick.confidence, 0) / picks.length) : 0;
+  const estimatedOdds = getEstimatedOdds();
+  const avgConfidence = getAverageConfidence();
 
   const sportsbooks = [
     { name: "DraftKings", logo: "🟢" },
@@ -76,14 +59,22 @@ const ParlayBuilder = () => {
                   <div>
                     <p className="font-medium text-sm">{pick.player}</p>
                     <p className="text-xs text-muted-foreground">
-                      {pick.prop} {pick.selection}
+                      {pick.prop} • {pick.selection}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {pick.team} • {pick.sport}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       {pick.confidence}%
                     </Badge>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0"
+                      onClick={() => removePick(pick.id)}
+                    >
                       <X className="w-3 h-3" />
                     </Button>
                   </div>

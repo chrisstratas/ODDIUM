@@ -23,6 +23,7 @@ import {
   Award
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSGP } from "@/contexts/SGPContext";
 
 interface PlayerModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ interface PlayerModalProps {
   team: string;
   sport: string;
 }
+
 
 interface GameLog {
   date: string;
@@ -53,6 +55,7 @@ interface UsageTrend {
 }
 
 const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalProps) => {
+  const { addPick } = useSGP();
   const [confidenceFilter, setConfidenceFilter] = useState([75]);
   const [valueFilter, setValueFilter] = useState([60]);
   const [recentFormFilter, setRecentFormFilter] = useState([50]);
@@ -394,6 +397,23 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
     }
   };
 
+  const handleAddPick = (prop: any, betType: 'over' | 'under') => {
+    const odds = betType === 'over' ? prop.over : prop.under;
+    const selection = `${betType.charAt(0).toUpperCase() + betType.slice(1)} ${prop.line}`;
+    
+    addPick({
+      player: playerName,
+      team: team,
+      sport: sport,
+      prop: prop.stat,
+      selection: selection,
+      line: prop.line,
+      odds: odds,
+      confidence: prop.confidence,
+      betType: betType
+    });
+  };
+
   const props = getSportSpecificProps(sport);
 
   // Fetch head-to-head data
@@ -530,11 +550,25 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
                           </Badge>
                         </div>
                         <div className="flex items-center gap-4">
-                          <div className="text-sm">
+                          <div className="text-sm flex items-center gap-2">
                             <span className="text-muted-foreground">O/U: </span>
-                            <span className="text-positive-odds font-medium">{prop.over}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAddPick(prop, 'over')}
+                              className="text-positive-odds font-medium hover:bg-green-50 px-2 py-1 h-auto"
+                            >
+                              {prop.over}
+                            </Button>
                             <span className="text-muted-foreground"> / </span>
-                            <span className="text-negative-odds font-medium">{prop.under}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAddPick(prop, 'under')}
+                              className="text-negative-odds font-medium hover:bg-red-50 px-2 py-1 h-auto"
+                            >
+                              {prop.under}
+                            </Button>
                           </div>
                           <div className="text-xs text-center">
                             <div className="font-medium">Edge: +{prop.edge}%</div>
