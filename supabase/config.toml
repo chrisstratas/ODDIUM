@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.get-prop-analytics]
 verify_jwt = false
+
+[functions.fetch-sports-schedule]
+verify_jwt = false
