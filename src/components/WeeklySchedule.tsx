@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Clock, MapPin, Tv, RefreshCw, CalendarIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRefresh } from "@/contexts/RefreshContext";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
