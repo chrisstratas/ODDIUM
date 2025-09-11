@@ -25,29 +25,16 @@ interface Game {
   awayScore?: number;
 }
 
-interface WeeklyScheduleProps {
+interface DailyScheduleProps {
   sport: string;
 }
 
-const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
+const DailySchedule = ({ sport }: DailyScheduleProps) => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
-    const now = new Date();
-    // Calculate start of NFL week (Thursday)
-    const dayOffset = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    // NFL weeks start on Thursday (4), so we need to adjust
-    const daysFromThursday = (dayOffset + 3) % 7; // Convert to days from Thursday
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - daysFromThursday);
-    
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    return { from: startOfWeek, to: endOfWeek };
-  });
   const [dataSource, setDataSource] = useState<'live' | 'fallback' | 'api'>('api');
   const { refreshAll, isRefreshing } = useRefresh();
 
@@ -55,12 +42,12 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
     try {
       setError(null);
       
+      const dateString = selectedDate.toISOString().split('T')[0];
+      
       let query = supabase
         .from('games_schedule')
         .select('*')
-        .gte('game_date', dateRange.from.toISOString().split('T')[0])
-        .lte('game_date', dateRange.to.toISOString().split('T')[0])
-        .order('game_date', { ascending: true })
+        .eq('game_date', dateString)
         .order('game_time', { ascending: true });
 
       if (sport !== 'all') {
@@ -135,21 +122,10 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
 
   useEffect(() => {
     fetchScheduleFromDB();
-  }, [sport, dateRange]);
+  }, [sport, selectedDate]);
 
-  const updateDateRange = (selectedDate: Date) => {
-    // For NFL, week starts on Thursday (day 4)
-    // Sunday = 0, Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4, Friday = 5, Saturday = 6
-    const startOfWeek = new Date(selectedDate);
-    const dayOffset = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const daysFromThursday = (dayOffset + 3) % 7; // Convert to days from Thursday
-    startOfWeek.setDate(selectedDate.getDate() - daysFromThursday);
-    
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    
-    setDateRange({ from: startOfWeek, to: endOfWeek });
-    setSelectedDate(selectedDate);
+  const updateSelectedDate = (date: Date) => {
+    setSelectedDate(date);
   };
 
   const formatDate = (dateString: string) => {
@@ -189,7 +165,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <span className="text-2xl">{getSportIcon()}</span>
-            {sport} Live Scores
+            {sport} Daily Schedule
           </CardTitle>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
@@ -214,7 +190,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={(date) => date && updateDateRange(date)}
+                  onSelect={(date) => date && updateSelectedDate(date)}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
                 />
@@ -232,7 +208,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
-          Showing games from {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d, yyyy")}
+          Showing games for {format(selectedDate, "EEEE, MMMM d, yyyy")}
         </div>
       </CardHeader>
       <CardContent>
@@ -250,11 +226,11 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         ) : games.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">
-              No games scheduled for {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d, yyyy")}
+              No games scheduled for {format(selectedDate, "EEEE, MMMM d, yyyy")}
             </p>
             <div className="flex justify-center gap-2">
-              <Button onClick={() => updateDateRange(new Date())} variant="outline" size="sm">
-                Current Week
+              <Button onClick={() => updateSelectedDate(new Date())} variant="outline" size="sm">
+                Today's Games
               </Button>
               <Button onClick={refreshAll} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -330,4 +306,4 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
   );
 };
 
-export default WeeklySchedule;
+export default DailySchedule;

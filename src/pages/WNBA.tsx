@@ -6,7 +6,7 @@ import ValueFilters from "@/components/ValueFilters";
 import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
 import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
-import WeeklySchedule from "@/components/WeeklySchedule";
+import DailySchedule from "@/components/DailySchedule";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -238,9 +238,9 @@ const WNBA = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3 order-1 lg:order-2">
-            {/* WNBA Weekly Schedule */}
+            {/* WNBA Daily Schedule */}
             <div className="mb-8">
-              <WeeklySchedule sport="WNBA" />
+              <DailySchedule sport="WNBA" />
             </div>
 
             {/* WNBA Insights */}

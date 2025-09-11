@@ -20,7 +20,7 @@ interface Game {
   seasonYear: number;
 }
 
-export const useSchedule = (sport: string) => {
+export const useSchedule = (sport: string, selectedDate?: Date) => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,22 +30,14 @@ export const useSchedule = (sport: string) => {
       setLoading(true);
       setError(null);
 
-      // Get current week's games
-      const currentDate = new Date();
-      const startOfWeek = new Date(currentDate);
-      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-      const startDate = startOfWeek.toISOString().split('T')[0];
-      const endDate = endOfWeek.toISOString().split('T')[0];
+      // Use selected date or default to today
+      const targetDate = selectedDate || new Date();
+      const dateString = targetDate.toISOString().split('T')[0];
 
       let query = supabase
         .from('games_schedule')
         .select('*')
-        .gte('game_date', startDate)
-        .lte('game_date', endDate)
-        .order('game_date', { ascending: true })
+        .eq('game_date', dateString)
         .order('game_time', { ascending: true });
 
       if (sport !== 'all') {
@@ -114,7 +106,7 @@ export const useSchedule = (sport: string) => {
 
   useEffect(() => {
     fetchSchedule();
-  }, [sport]);
+  }, [sport, selectedDate]);
 
   return {
     games,
