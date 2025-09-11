@@ -6,6 +6,7 @@ import ValueFilters from "@/components/ValueFilters";
 import SGPCategoryFilters from "@/components/SGPCategoryFilters";
 import ParlayBuilder from "@/components/BetSlip";
 import AdvancedPlayerAnalytics from "@/components/AdvancedPlayerAnalyticsSimple";
+import { ParlayImageAnalyzer } from "@/components/ParlayImageAnalyzer";
 import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -238,6 +239,11 @@ const Index = () => {
             {/* Today's Analytics Insights */}
             <div className="mb-8">
               <BettingInsights />
+            </div>
+
+            {/* AI Parlay Image Analyzer */}
+            <div className="mb-8">
+              <ParlayImageAnalyzer />
             </div>
 
             {/* Risk vs Reward Analysis */}
