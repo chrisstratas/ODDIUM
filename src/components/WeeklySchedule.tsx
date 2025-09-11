@@ -92,25 +92,14 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
     try {
       console.log('Refreshing schedule with multiple live score sources...');
       
-      // Try Livesport.com first for most comprehensive live data
+      // Use Livesport.com as primary source
       const livesportResponse = await supabase.functions.invoke('fetch-livesport-scores', {
         body: { sport }
       });
       
       if (livesportResponse.error) {
         console.error('Livesport.com fetch error:', livesportResponse.error);
-      } else {
-        console.log('Livesport.com live scores refresh successful:', livesportResponse.data);
-      }
-      
-      // Then try Fox Sports for additional coverage
-      const foxSportsResponse = await supabase.functions.invoke('fetch-fox-sports-scores', {
-        body: { sport }
-      });
-      
-      if (foxSportsResponse.error) {
-        console.error('Fox Sports fetch error:', foxSportsResponse.error);
-        // Final fallback to regular schedule fetch
+        // Fallback to regular schedule fetch
         const fallbackResponse = await supabase.functions.invoke('fetch-sports-schedule', {
           body: { sport }
         });
@@ -120,7 +109,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         }
         console.log('Fallback schedule refresh successful:', fallbackResponse.data);
       } else {
-        console.log('Fox Sports live scores refresh successful:', foxSportsResponse.data);
+        console.log('Livesport.com live scores refresh successful:', livesportResponse.data);
       }
       
       // Wait a moment then refetch from DB
@@ -187,10 +176,10 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <span className="text-2xl">{getSportIcon()}</span>
-            {sport} Live Scores - Multi-Source
+            {sport} Live Scores - Livesport.com
           </CardTitle>
           <div className="text-xs text-muted-foreground">
-            Livesport.com • Fox Sports • SportsData.io
+            Livesport.com • SportsData.io fallback
           </div>
           <div className="flex items-center gap-2">
             <Popover>
@@ -224,7 +213,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
               disabled={refreshing}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Loading Multi-Source...' : 'Get Live Scores'}
+              {refreshing ? 'Loading Livesport...' : 'Get Live Scores'}
             </Button>
           </div>
         </div>

@@ -12,8 +12,5 @@ verify_jwt = false
 [functions.fetch-sports-schedule]
 verify_jwt = false
 
-[functions.fetch-fox-sports-scores]
-verify_jwt = false
-
 [functions.fetch-livesport-scores]
 verify_jwt = false
