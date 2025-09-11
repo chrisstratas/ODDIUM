@@ -31,30 +31,30 @@ serve(async (req) => {
     
     console.log(`Fetching ${sport} schedule from API Sports...`);
 
-    // API Sports league configurations
+    // API Sports league configurations - Updated for 2025-2026 seasons
     const apiSportsConfig = {
       'NFL': { 
         endpoint: 'https://v1.american-football.api-sports.io/games',
         league: 1,
-        season: '2024',
+        season: '2025',
         host: 'v1.american-football.api-sports.io'
       },
       'NBA': { 
         endpoint: 'https://v1.basketball.api-sports.io/games',
         league: 12,
-        season: '2024-2025',
+        season: '2025-2026',
         host: 'v1.basketball.api-sports.io'
       },
       'MLB': { 
         endpoint: 'https://v1.baseball.api-sports.io/games',
         league: 1,
-        season: '2024',
+        season: '2025',
         host: 'v1.baseball.api-sports.io'
       },
       'NHL': { 
         endpoint: 'https://v1.hockey.api-sports.io/games',
         league: 57,
-        season: '2024-2025',
+        season: '2025-2026',
         host: 'v1.hockey.api-sports.io'
       }
     };
