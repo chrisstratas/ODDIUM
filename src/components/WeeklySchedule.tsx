@@ -36,7 +36,11 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
     const now = new Date();
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    // Calculate start of NFL week (Sunday)
+    const dayOffset = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - dayOffset);
+    
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     return { from: startOfWeek, to: endOfWeek };
@@ -52,7 +56,8 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         .select('*')
         .gte('game_date', dateRange.from.toISOString().split('T')[0])
         .lte('game_date', dateRange.to.toISOString().split('T')[0])
-        .order('game_date', { ascending: true });
+        .order('game_date', { ascending: true })
+        .order('game_time', { ascending: true });
 
       if (sport !== 'all') {
         query = query.eq('sport', sport);
@@ -79,7 +84,33 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         awayScore: row.away_score
       }));
 
-      setGames(formattedGames);
+      // Remove duplicates by creating a unique key and keeping only the first occurrence
+      const uniqueGames = formattedGames.reduce((acc, game) => {
+        const gameKey = `${game.date}-${game.homeTeam}-${game.awayTeam}`;
+        const reverseKey = `${game.date}-${game.awayTeam}-${game.homeTeam}`;
+        
+        // Check if we already have this game or its reverse
+        const existingIndex = acc.findIndex(existing => {
+          const existingKey = `${existing.date}-${existing.homeTeam}-${existing.awayTeam}`;
+          return existingKey === gameKey || existingKey === reverseKey;
+        });
+        
+        if (existingIndex === -1) {
+          acc.push(game);
+        } else {
+          // If duplicate found, keep the one with more recent data (live scores preferred)
+          const existing = acc[existingIndex];
+          if (game.status === 'live' && existing.status !== 'live') {
+            acc[existingIndex] = game;
+          } else if (game.homeScore !== null && existing.homeScore === null) {
+            acc[existingIndex] = game;
+          }
+        }
+        
+        return acc;
+      }, [] as Game[]);
+
+      setGames(uniqueGames);
     } catch (err) {
       console.error('Error fetching schedule:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch schedule');
@@ -133,8 +164,12 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
   }, [sport, dateRange]);
 
   const updateDateRange = (selectedDate: Date) => {
+    // For NFL and most sports, week starts on Sunday (day 0)
+    // Sunday = 0, Monday = 1, ..., Saturday = 6
     const startOfWeek = new Date(selectedDate);
-    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+    const dayOffset = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    startOfWeek.setDate(selectedDate.getDate() - dayOffset);
+    
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     

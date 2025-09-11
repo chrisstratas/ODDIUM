@@ -311,12 +311,12 @@ serve(async (req) => {
     const checkAndVerifyGames = async (newGames: any[]) => {
       if (newGames.length === 0) return [];
 
-      // Get existing games for comparison
+      // Get existing games for comparison (broader date range)
       const { data: existingGames, error } = await supabase
         .from('games_schedule')
         .select('*')
-        .gte('game_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) // Last 7 days
-        .lte('game_date', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); // Next 7 days
+        .gte('game_date', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) // Last 14 days
+        .lte('game_date', new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); // Next 14 days
 
       if (error) {
         console.error('Error fetching existing games:', error);
@@ -324,24 +324,47 @@ serve(async (req) => {
       }
 
       const verifiedGames = [];
+      const processedGameKeys = new Set();
+      
       for (const newGame of newGames) {
+        // Create a unique key for this game to detect internal duplicates
+        const gameKey = `${newGame.sport}-${newGame.game_date}-${newGame.home_team}-${newGame.away_team}`;
+        
+        if (processedGameKeys.has(gameKey)) {
+          console.log(`Internal duplicate detected: ${gameKey}`);
+          continue;
+        }
+        processedGameKeys.add(gameKey);
+
         // Check for duplicates based on teams, date, and sport
         const duplicate = existingGames?.find(existing => 
           existing.sport === newGame.sport &&
           existing.game_date === newGame.game_date &&
-          ((existing.home_team === newGame.home_team && existing.away_team === newGame.away_team) ||
-           (existing.home_team === newGame.away_team && existing.away_team === newGame.home_team))
+          (
+            // Exact match
+            (existing.home_team === newGame.home_team && existing.away_team === newGame.away_team) ||
+            // Reversed match
+            (existing.home_team === newGame.away_team && existing.away_team === newGame.home_team) ||
+            // Partial team name matches (e.g. "Lakers" vs "Los Angeles Lakers")
+            (existing.home_team.includes(newGame.home_team) || newGame.home_team.includes(existing.home_team)) &&
+            (existing.away_team.includes(newGame.away_team) || newGame.away_team.includes(existing.away_team))
+          )
         );
 
         if (duplicate) {
           console.log(`Duplicate found for ${newGame.home_team} vs ${newGame.away_team} on ${newGame.game_date}`);
           
-          // Update existing game with newer data if TheScore has more recent info
-          if (newGame.data_source === 'thescore' && (!duplicate.data_source || duplicate.data_source !== 'thescore')) {
+          // Only update if TheScore has more recent data and different status/scores
+          if (newGame.data_source === 'thescore' && 
+              (newGame.status !== duplicate.status || 
+               newGame.home_score !== duplicate.home_score || 
+               newGame.away_score !== duplicate.away_score)) {
+            
+            console.log(`Updating existing game with newer TheScore data`);
             verifiedGames.push({
               ...newGame,
-              id: duplicate.id, // Keep existing ID for update
-              game_id: duplicate.game_id // Keep existing game_id
+              id: duplicate.id, 
+              game_id: duplicate.game_id 
             });
           }
         } else {
