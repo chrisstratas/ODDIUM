@@ -8,10 +8,12 @@ interface AuthContextType {
   session: Session | null;
   hasAccess: boolean;
   loading: boolean;
+  needsOnboarding: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   submitAccessCode: (code: string) => Promise<{ error: any }>;
+  completeOnboarding: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const checkUserAccess = async (userId: string) => {
     try {
@@ -35,6 +38,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const checkOnboardingStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('preferred_sportsbook')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      
+      // If no profile exists or no sportsbook preference, needs onboarding
+      setNeedsOnboarding(!data || !data.preferred_sportsbook);
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setNeedsOnboarding(true);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -46,9 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Update session expiry on successful auth
           SessionManager.updateSessionExpiry();
           
-          // Check access after setting user
+          // Check access and onboarding after setting user
           setTimeout(() => {
             checkUserAccess(session.user.id);
+            checkOnboardingStatus(session.user.id);
           }, 0);
         } else {
           setHasAccess(false);
@@ -67,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         setTimeout(() => {
           checkUserAccess(session.user.id);
+          checkOnboardingStatus(session.user.id);
         }, 0);
       } else {
         setLoading(false);
@@ -169,15 +192,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const completeOnboarding = () => {
+    setNeedsOnboarding(false);
+  };
+
   const value = {
     user,
     session,
     hasAccess,
     loading,
+    needsOnboarding,
     signUp,
     signIn,
     signOut,
     submitAccessCode,
+    completeOnboarding,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import SportsbookOnboarding from '@/components/SportsbookOnboarding';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { user, hasAccess, loading } = useAuth();
+  const { user, hasAccess, loading, needsOnboarding, completeOnboarding } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -47,6 +48,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
         </Card>
       </div>
     );
+  }
+
+  if (needsOnboarding) {
+    return <SportsbookOnboarding onComplete={completeOnboarding} />;
   }
 
   return <>{children}</>;
