@@ -43,47 +43,51 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
       setError(null);
       setDataSource('live');
       
-      console.log('Fetching live schedule data...');
+      console.log('Fetching live schedule data from Highlightly...');
       
-      // Try to fetch live data from TheScore
-      const { data: liveData, error: liveError } = await supabase.functions.invoke('fetch-thescore-data', {
+      // Try to fetch live data from Highlightly
+      const { data: liveData, error: liveError } = await supabase.functions.invoke('fetch-api-sports-schedule', {
         body: { sport: sport === 'all' ? 'NBA' : sport }
       });
       
       if (liveError) {
-        console.warn('Live data fetch failed, falling back to database:', liveError);
+        console.warn('Highlightly data fetch failed, falling back to database:', liveError);
         setDataSource('fallback');
         return await fetchScheduleFromDB();
       }
       
-      if (liveData && liveData.games && liveData.games.length > 0) {
-        console.log('Successfully fetched live data');
+      if (liveData && liveData.success && liveData.games && liveData.games.length > 0) {
+        console.log('Successfully fetched live data from Highlightly');
         const formattedGames: Game[] = liveData.games.map((game: any) => ({
-          id: game.id,
-          homeTeam: game.homeTeam,
-          awayTeam: game.awayTeam,
-          date: game.date,
-          time: game.time,
+          id: game.game_id || game.id,
+          homeTeam: game.home_team,
+          awayTeam: game.away_team,
+          date: game.game_date,
+          time: game.game_time,
           venue: game.venue || '',
-          network: '',
-          homeRecord: '',
-          awayRecord: '',
+          network: game.network || '',
+          homeRecord: game.home_record || '',
+          awayRecord: game.away_record || '',
           status: game.status as 'scheduled' | 'live' | 'final',
-          homeScore: game.homeScore,
-          awayScore: game.awayScore
+          homeScore: game.home_score,
+          awayScore: game.away_score
         }));
         
-        setGames(formattedGames);
+        // Filter games for the selected date
+        const selectedDateString = selectedDate.toISOString().split('T')[0];
+        const filteredGames = formattedGames.filter(game => game.date === selectedDateString);
+        
+        setGames(filteredGames);
         return;
       }
       
       // If no live data, fall back to database
-      console.log('No live data available, falling back to database');
+      console.log('No live data available from Highlightly, falling back to database');
       setDataSource('fallback');
       await fetchScheduleFromDB();
       
     } catch (err) {
-      console.error('Error fetching live data:', err);
+      console.error('Error fetching live data from Highlightly:', err);
       setDataSource('fallback');
       await fetchScheduleFromDB();
     }
