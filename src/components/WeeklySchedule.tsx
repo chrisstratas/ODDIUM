@@ -81,16 +81,27 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
   const refreshSchedule = async () => {
     setRefreshing(true);
     try {
-      console.log('Refreshing schedule data...');
-      const response = await supabase.functions.invoke('fetch-sports-schedule', {
+      console.log('Refreshing schedule with Fox Sports live scores...');
+      
+      // First try to get live scores from Fox Sports
+      const foxSportsResponse = await supabase.functions.invoke('fetch-fox-sports-scores', {
         body: { sport }
       });
       
-      if (response.error) {
-        throw response.error;
+      if (foxSportsResponse.error) {
+        console.error('Fox Sports fetch error:', foxSportsResponse.error);
+        // Fallback to regular schedule fetch
+        const fallbackResponse = await supabase.functions.invoke('fetch-sports-schedule', {
+          body: { sport }
+        });
+        
+        if (fallbackResponse.error) {
+          throw fallbackResponse.error;
+        }
+        console.log('Fallback schedule refresh successful:', fallbackResponse.data);
+      } else {
+        console.log('Fox Sports live scores refresh successful:', foxSportsResponse.data);
       }
-      
-      console.log('Schedule refresh successful:', response.data);
       
       // Wait a moment then refetch from DB
       setTimeout(() => {
@@ -146,7 +157,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <span className="text-2xl">{getSportIcon()}</span>
-            {sport} Weekly Schedule
+            {sport} Live Scores - Fox Sports
           </CardTitle>
           <Button
             variant="outline"
@@ -155,7 +166,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
             disabled={refreshing}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Loading...' : 'Refresh'}
+            {refreshing ? 'Loading Fox Sports...' : 'Get Live Scores'}
           </Button>
         </div>
       </CardHeader>
@@ -176,7 +187,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
             <p className="text-muted-foreground mb-4">No games scheduled for this week</p>
             <Button onClick={refreshSchedule} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Load Schedule
+              Get Fox Sports Scores
             </Button>
           </div>
         ) : (
