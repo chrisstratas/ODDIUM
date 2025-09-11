@@ -151,61 +151,250 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
     { period: "Season", usage: 27.6, efficiency: 1.19, opportunities: 22.7 }
   ];
 
-  // Enhanced props with matchup grades
-  const props = [
-    { 
-      stat: "Points", 
-      line: 25.5, 
-      over: "-110", 
-      under: "-110", 
-      confidence: 85, 
-      value: "High", 
-      recent: "+2.4",
-      matchupGrade: "A-",
-      oddsMovement: "↗ From -115",
-      sportsbooks: 4,
-      edge: 6.8
-    },
-    { 
-      stat: "Rebounds", 
-      line: 8.5, 
-      over: "+105", 
-      under: "-125", 
-      confidence: 78, 
-      value: "Medium", 
-      recent: "+1.2",
-      matchupGrade: "B+",
-      oddsMovement: "↘ From +100",
-      sportsbooks: 3,
-      edge: 4.2
-    },
-    { 
-      stat: "Assists", 
-      line: 7.5, 
-      over: "-105", 
-      under: "-115", 
-      confidence: 82, 
-      value: "High", 
-      recent: "+0.8",
-      matchupGrade: "A",
-      oddsMovement: "→ Stable",
-      sportsbooks: 5,
-      edge: 5.1
-    },
-    { 
-      stat: "3-Pointers", 
-      line: 2.5, 
-      over: "+115", 
-      under: "-140", 
-      confidence: 71, 
-      value: "Medium", 
-      recent: "+0.3",
-      matchupGrade: "C+",
-      oddsMovement: "↗ From +110",
-      sportsbooks: 2,
-      edge: 2.8
+  // Sport-specific props function
+  const getSportSpecificProps = (sport: string) => {
+    switch (sport.toLowerCase()) {
+      case 'nba':
+      case 'wnba':
+        return [
+          { 
+            stat: "Points", 
+            line: 25.5, 
+            over: "-110", 
+            under: "-110", 
+            confidence: 85, 
+            value: "High", 
+            recent: "+2.4",
+            matchupGrade: "A-",
+            oddsMovement: "↗ From -115",
+            sportsbooks: 4,
+            edge: 6.8
+          },
+          { 
+            stat: "Rebounds", 
+            line: 8.5, 
+            over: "+105", 
+            under: "-125", 
+            confidence: 78, 
+            value: "Medium", 
+            recent: "+1.2",
+            matchupGrade: "B+",
+            oddsMovement: "↘ From +100",
+            sportsbooks: 3,
+            edge: 4.2
+          },
+          { 
+            stat: "Assists", 
+            line: 7.5, 
+            over: "-105", 
+            under: "-115", 
+            confidence: 82, 
+            value: "High", 
+            recent: "+0.8",
+            matchupGrade: "A",
+            oddsMovement: "→ Stable",
+            sportsbooks: 5,
+            edge: 5.1
+          },
+          { 
+            stat: "3-Pointers", 
+            line: 2.5, 
+            over: "+115", 
+            under: "-140", 
+            confidence: 71, 
+            value: "Medium", 
+            recent: "+0.3",
+            matchupGrade: "C+",
+            oddsMovement: "↗ From +110",
+            sportsbooks: 2,
+            edge: 2.8
+          }
+        ];
+      case 'nfl':
+        return [
+          { 
+            stat: "Passing Yards", 
+            line: 285.5, 
+            over: "-110", 
+            under: "-110", 
+            confidence: 82, 
+            value: "High", 
+            recent: "+18.3",
+            matchupGrade: "A",
+            oddsMovement: "↗ From -115",
+            sportsbooks: 5,
+            edge: 7.2
+          },
+          { 
+            stat: "Rush Attempts", 
+            line: 18.5, 
+            over: "-105", 
+            under: "-115", 
+            confidence: 76, 
+            value: "Medium", 
+            recent: "+1.4",
+            matchupGrade: "B+",
+            oddsMovement: "→ Stable",
+            sportsbooks: 4,
+            edge: 4.8
+          },
+          { 
+            stat: "Receptions", 
+            line: 5.5, 
+            over: "+105", 
+            under: "-125", 
+            confidence: 79, 
+            value: "High", 
+            recent: "+0.7",
+            matchupGrade: "A-",
+            oddsMovement: "↘ From +110",
+            sportsbooks: 3,
+            edge: 5.1
+          },
+          { 
+            stat: "Receiving Yards", 
+            line: 75.5, 
+            over: "-110", 
+            under: "-110", 
+            confidence: 73, 
+            value: "Medium", 
+            recent: "+8.2",
+            matchupGrade: "B",
+            oddsMovement: "↗ From -120",
+            sportsbooks: 4,
+            edge: 3.9
+          }
+        ];
+      case 'mlb':
+        return [
+          { 
+            stat: "Hits", 
+            line: 1.5, 
+            over: "-110", 
+            under: "-110", 
+            confidence: 74, 
+            value: "Medium", 
+            recent: "+0.3",
+            matchupGrade: "B+",
+            oddsMovement: "→ Stable",
+            sportsbooks: 4,
+            edge: 4.5
+          },
+          { 
+            stat: "Strikeouts", 
+            line: 7.5, 
+            over: "+105", 
+            under: "-125", 
+            confidence: 81, 
+            value: "High", 
+            recent: "+1.2",
+            matchupGrade: "A-",
+            oddsMovement: "↗ From +100",
+            sportsbooks: 5,
+            edge: 6.3
+          },
+          { 
+            stat: "Total Bases", 
+            line: 2.5, 
+            over: "-105", 
+            under: "-115", 
+            confidence: 77, 
+            value: "Medium", 
+            recent: "+0.4",
+            matchupGrade: "B",
+            oddsMovement: "↘ From -100",
+            sportsbooks: 3,
+            edge: 3.8
+          },
+          { 
+            stat: "RBIs", 
+            line: 1.5, 
+            over: "+115", 
+            under: "-140", 
+            confidence: 68, 
+            value: "Low", 
+            recent: "+0.2",
+            matchupGrade: "C+",
+            oddsMovement: "→ Stable",
+            sportsbooks: 2,
+            edge: 2.1
+          }
+        ];
+      case 'nhl':
+        return [
+          { 
+            stat: "Goals", 
+            line: 0.5, 
+            over: "+160", 
+            under: "-200", 
+            confidence: 71, 
+            value: "Medium", 
+            recent: "+0.2",
+            matchupGrade: "B",
+            oddsMovement: "↗ From +155",
+            sportsbooks: 4,
+            edge: 4.2
+          },
+          { 
+            stat: "Assists", 
+            line: 0.5, 
+            over: "+110", 
+            under: "-135", 
+            confidence: 76, 
+            value: "High", 
+            recent: "+0.3",
+            matchupGrade: "A-",
+            oddsMovement: "→ Stable",
+            sportsbooks: 5,
+            edge: 5.7
+          },
+          { 
+            stat: "Shots on Goal", 
+            line: 3.5, 
+            over: "-110", 
+            under: "-110", 
+            confidence: 79, 
+            value: "High", 
+            recent: "+0.8",
+            matchupGrade: "A",
+            oddsMovement: "↘ From -105",
+            sportsbooks: 3,
+            edge: 6.1
+          },
+          { 
+            stat: "Points", 
+            line: 0.5, 
+            over: "+105", 
+            under: "-125", 
+            confidence: 73, 
+            value: "Medium", 
+            recent: "+0.4",
+            matchupGrade: "B+",
+            oddsMovement: "↗ From +100",
+            sportsbooks: 4,
+            edge: 4.8
+          }
+        ];
+      default:
+        return [
+          { 
+            stat: "Performance", 
+            line: 1.5, 
+            over: "-110", 
+            under: "-110", 
+            confidence: 75, 
+            value: "Medium", 
+            recent: "+0.5",
+            matchupGrade: "B",
+            oddsMovement: "→ Stable",
+            sportsbooks: 3,
+            edge: 4.0
+          }
+        ];
     }
-  ];
+  };
+
+  const props = getSportSpecificProps(sport);
 
   // Fetch head-to-head data
   useEffect(() => {
