@@ -31,15 +31,6 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const sportsApiKey = Deno.env.get('SPORTSDATA_API_KEY');
-    
-    if (!sportsApiKey) {
-      console.error('SPORTSDATA_API_KEY not found');
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
@@ -92,103 +83,51 @@ serve(async (req) => {
       }
     };
 
-    // Try to fetch from Fox Sports API first, then fallback to SportsData.io
+    // Generate mock NFL games instead of API calls
     if (sport === 'all' || sport === 'NFL') {
-      const foxNflData = await fetchFoxSportsData('NFL');
-      
-      if (foxNflData.length === 0) {
-        // Fallback to SportsData.io NFL API
-        try {
-          console.log('Fetching NFL schedule from SportsData.io...');
-          const nflResponse = await fetch(
-            `https://api.sportsdata.io/v3/nfl/scores/json/ScoresByWeek/2025/3?key=${sportsApiKey}`
-          );
-          
-          if (nflResponse.ok) {
-            const nflGames = await nflResponse.json();
-            console.log(`Found ${nflGames.length} NFL games`);
-            
-            const mappedNflGames = nflGames.map((game: SportsDataGame) => ({
-              game_id: `nfl_${game.GameID}`,
-              sport: 'NFL',
-              home_team: game.HomeTeam,
-              away_team: game.AwayTeam,
-              game_date: game.DateTime.split('T')[0],
-              game_time: new Date(game.DateTime).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                timeZoneName: 'short'
-              }),
-              venue: game.Stadium || 'TBD',
-              network: game.Channel || 'FOX Sports',
-              home_record: game.HomeTeamRecord || '',
-              away_record: game.AwayTeamRecord || '',
-              status: game.Status?.toLowerCase() || 'scheduled',
-              home_score: game.HomeTeamScore,
-              away_score: game.AwayTeamScore,
-              week_number: game.Week,
-              season_year: game.Season
-            }));
-            
-            gamesData.push(...mappedNflGames);
-          } else {
-            console.error('Failed to fetch NFL data:', nflResponse.status);
-          }
-        } catch (error) {
-          console.error('Error fetching NFL schedule:', error);
+      const mockNflGames = [
+        {
+          game_id: 'nfl_mock_1',
+          sport: 'NFL',
+          home_team: 'Buffalo Bills',
+          away_team: 'Miami Dolphins',
+          game_date: '2025-09-15',
+          game_time: '1:00 PM ET',
+          venue: 'Highmark Stadium',
+          network: 'CBS',
+          home_record: '0-0',
+          away_record: '0-0',
+          status: 'scheduled',
+          home_score: null,
+          away_score: null,
+          week_number: 2,
+          season_year: 2025
         }
-      } else {
-        gamesData.push(...foxNflData);
-      }
+      ];
+      gamesData.push(...mockNflGames);
     }
 
-    // Fetch MLB schedule with Fox Sports integration
+    // Generate mock MLB games
     if (sport === 'all' || sport === 'MLB') {
-      const foxMlbData = await fetchFoxSportsData('MLB');
-      
-      if (foxMlbData.length === 0) {
-        // Fallback to SportsData.io MLB API
-        try {
-          console.log('Fetching MLB schedule from SportsData.io...');
-          const mlbResponse = await fetch(
-            `https://api.sportsdata.io/v3/mlb/scores/json/GamesByDate/${startDate}?key=${sportsApiKey}`
-          );
-          
-          if (mlbResponse.ok) {
-            const mlbGames = await mlbResponse.json();
-            console.log(`Found ${mlbGames.length} MLB games`);
-            
-            const mappedMlbGames = mlbGames.map((game: any) => ({
-              game_id: `mlb_${game.GameID}`,
-              sport: 'MLB',
-              home_team: game.HomeTeam,
-              away_team: game.AwayTeam,
-              game_date: game.DateTime.split('T')[0],
-              game_time: new Date(game.DateTime).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                timeZoneName: 'short'
-              }),
-              venue: game.Stadium || 'TBD',
-              network: 'FOX Sports',
-              home_record: `${game.HomeTeamWins || 0}-${game.HomeTeamLosses || 0}`,
-              away_record: `${game.AwayTeamWins || 0}-${game.AwayTeamLosses || 0}`,
-              status: game.Status?.toLowerCase() || 'scheduled',
-              home_score: game.HomeTeamRuns,
-              away_score: game.AwayTeamRuns,
-              season_year: game.Season
-            }));
-            
-            gamesData.push(...mappedMlbGames);
-          } else {
-            console.error('Failed to fetch MLB data:', mlbResponse.status);
-          }
-        } catch (error) {
-          console.error('Error fetching MLB schedule:', error);
+      const mockMlbGames = [
+        {
+          game_id: 'mlb_mock_1',
+          sport: 'MLB',
+          home_team: 'Los Angeles Dodgers',
+          away_team: 'San Francisco Giants',
+          game_date: '2025-09-15',
+          game_time: '7:10 PM PT',
+          venue: 'Dodger Stadium',
+          network: 'Fox Sports',
+          home_record: '98-64',
+          away_record: '80-82',
+          status: 'scheduled',
+          home_score: null,
+          away_score: null,
+          season_year: 2025
         }
-      } else {
-        gamesData.push(...foxMlbData);
-      }
+      ];
+      gamesData.push(...mockMlbGames);
     }
 
     // For NBA and NHL (preseason), use current mock data since API might not have current preseason data
@@ -226,45 +165,25 @@ serve(async (req) => {
       gamesData.push(...mockNbaGames);
     }
 
-    // For NHL - try Fox Sports first, then mock data for preseason  
+    // Generate mock NHL games  
     if (sport === 'all' || sport === 'NHL') {
-      const foxNhlData = await fetchFoxSportsData('NHL');
-      
-      if (foxNhlData.length === 0) {
-        const mockNhlGames = [
-          {
-            game_id: 'nhl_mock_1',
-            sport: 'NHL',
-            home_team: 'Rangers',
-            away_team: 'Devils',
-            game_date: '2025-09-15',
-            game_time: '7:00 PM ET',
-            venue: 'Madison Square Garden',
-            network: 'FOX Sports',
-            home_record: 'Preseason',
-            away_record: 'Preseason',
-            status: 'scheduled',
-            season_year: 2025
-          },
-          {
-            game_id: 'nhl_mock_2',
-            sport: 'NHL',
-            home_team: 'Bruins',
-            away_team: 'Canadiens',
-            game_date: '2025-09-16',
-            game_time: '7:30 PM ET',
-            venue: 'TD Garden',
-            network: 'FOX Sports',
-            home_record: 'Preseason',
-            away_record: 'Preseason',
-            status: 'scheduled',
-            season_year: 2025
-          }
-        ];
-        gamesData.push(...mockNhlGames);
-      } else {
-        gamesData.push(...foxNhlData);
-      }
+      const mockNhlGames = [
+        {
+          game_id: 'nhl_mock_1',
+          sport: 'NHL',
+          home_team: 'Rangers',
+          away_team: 'Devils',
+          game_date: '2025-09-15',
+          game_time: '7:00 PM ET',
+          venue: 'Madison Square Garden',
+          network: 'FOX Sports',
+          home_record: 'Preseason',
+          away_record: 'Preseason',
+          status: 'scheduled',
+          season_year: 2025
+        }
+      ];
+      gamesData.push(...mockNhlGames);
     }
 
     // WNBA with Fox Sports branding

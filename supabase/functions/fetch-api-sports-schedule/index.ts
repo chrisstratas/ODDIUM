@@ -15,112 +15,133 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const apiSportsKey = Deno.env.get('API_SPORTS_KEY');
-    
-    if (!apiSportsKey) {
-      console.error('API_SPORTS_KEY not found');
-      return new Response(JSON.stringify({ error: 'API Sports key not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     const { sport } = await req.json().catch(() => ({ sport: 'all' }));
     
-    console.log(`Fetching ${sport} schedule from API Sports...`);
+    console.log(`Generating mock ${sport} schedule data...`);
 
-    // API Sports league configurations - Updated for 2025-2026 seasons
-    const apiSportsConfig = {
-      'NFL': { 
-        endpoint: 'https://v1.american-football.api-sports.io/games',
-        league: 1,
-        season: '2025',
-        host: 'v1.american-football.api-sports.io'
-      },
-      'NBA': { 
-        endpoint: 'https://v1.basketball.api-sports.io/games',
-        league: 12,
-        season: '2025-2026',
-        host: 'v1.basketball.api-sports.io'
-      },
-      'MLB': { 
-        endpoint: 'https://v1.baseball.api-sports.io/games',
-        league: 1,
-        season: '2025',
-        host: 'v1.baseball.api-sports.io'
-      },
-      'NHL': { 
-        endpoint: 'https://v1.hockey.api-sports.io/games',
-        league: 57,
-        season: '2025-2026',
-        host: 'v1.hockey.api-sports.io'
-      }
+    // Mock game data for all sports
+    const createMockGames = (sportType: string) => {
+      const mockGames = {
+        'NFL': [
+          {
+            id: crypto.randomUUID(),
+            game_id: `mock_nfl_1`,
+            sport: 'NFL',
+            home_team: 'Buffalo Bills',
+            away_team: 'Miami Dolphins',
+            game_date: '2025-09-15',
+            game_time: '1:00 PM ET',
+            venue: 'Highmark Stadium',
+            network: 'CBS',
+            home_record: '0-0',
+            away_record: '0-0',
+            status: 'scheduled',
+            home_score: null,
+            away_score: null,
+            season_year: 2025,
+            week_number: 2,
+            data_source: 'mock_data'
+          },
+          {
+            id: crypto.randomUUID(),
+            game_id: `mock_nfl_2`,
+            sport: 'NFL',
+            home_team: 'Kansas City Chiefs',
+            away_team: 'Denver Broncos',
+            game_date: '2025-09-15',
+            game_time: '4:25 PM ET',
+            venue: 'Arrowhead Stadium',
+            network: 'CBS',
+            home_record: '0-0',
+            away_record: '0-0',
+            status: 'scheduled',
+            home_score: null,
+            away_score: null,
+            season_year: 2025,
+            week_number: 2,
+            data_source: 'mock_data'
+          }
+        ],
+        'NBA': [
+          {
+            id: crypto.randomUUID(),
+            game_id: `mock_nba_1`,
+            sport: 'NBA',
+            home_team: 'Los Angeles Lakers',
+            away_team: 'Golden State Warriors',
+            game_date: '2025-09-15',
+            game_time: '7:30 PM PT',
+            venue: 'Crypto.com Arena',
+            network: 'ESPN',
+            home_record: 'Preseason',
+            away_record: 'Preseason',
+            status: 'scheduled',
+            home_score: null,
+            away_score: null,
+            season_year: 2025,
+            week_number: null,
+            data_source: 'mock_data'
+          }
+        ],
+        'MLB': [
+          {
+            id: crypto.randomUUID(),
+            game_id: `mock_mlb_1`,
+            sport: 'MLB',
+            home_team: 'Los Angeles Dodgers',
+            away_team: 'San Francisco Giants',
+            game_date: '2025-09-15',
+            game_time: '7:10 PM PT',
+            venue: 'Dodger Stadium',
+            network: 'Fox Sports',
+            home_record: '98-64',
+            away_record: '80-82',
+            status: 'scheduled',
+            home_score: null,
+            away_score: null,
+            season_year: 2025,
+            week_number: null,
+            data_source: 'mock_data'
+          }
+        ],
+        'NHL': [
+          {
+            id: crypto.randomUUID(),
+            game_id: `mock_nhl_1`,
+            sport: 'NHL',
+            home_team: 'New York Rangers',
+            away_team: 'New Jersey Devils',
+            game_date: '2025-09-15',
+            game_time: '7:00 PM ET',
+            venue: 'Madison Square Garden',
+            network: 'ESPN',
+            home_record: 'Preseason',
+            away_record: 'Preseason',
+            status: 'scheduled',
+            home_score: null,
+            away_score: null,
+            season_year: 2025,
+            week_number: null,
+            data_source: 'mock_data'
+          }
+        ]
+      };
+      
+      return mockGames[sportType as keyof typeof mockGames] || [];
     };
 
     let gamesData: any[] = [];
 
-    // Fetch from API Sports for each sport
+    // Generate mock data for requested sports
     const sportsToFetch = sport === 'all' ? ['NFL', 'NBA', 'MLB', 'NHL'] : [sport];
 
     for (const sportType of sportsToFetch) {
-      const config = apiSportsConfig[sportType as keyof typeof apiSportsConfig];
-      if (!config) continue;
-
-      try {
-        console.log(`Fetching ${sportType} from API Sports...`);
-        
-        const today = new Date().toISOString().split('T')[0];
-        const response = await fetch(`${config.endpoint}?league=${config.league}&season=${config.season}&date=${today}`, {
-          headers: {
-            'X-RapidAPI-Key': apiSportsKey,
-            'X-RapidAPI-Host': config.host
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const games = data.response || [];
-          
-          console.log(`Found ${games.length} ${sportType} games from API Sports`);
-
-          const mappedGames = games.map((game: any) => {
-            const gameDate = new Date(game.date).toISOString().split('T')[0];
-            const gameTime = new Date(game.date).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-              timeZoneName: 'short'
-            });
-
-            return {
-              id: crypto.randomUUID(),
-              game_id: `apisports_${sportType.toLowerCase()}_${game.id}`,
-              sport: sportType,
-              home_team: game.teams?.home?.name || 'Home Team',
-              away_team: game.teams?.away?.name || 'Away Team',
-              game_date: gameDate,
-              game_time: gameTime,
-              venue: game.venue?.name || 'TBD',
-              network: 'API Sports',
-              home_record: '',
-              away_record: '',
-              status: game.status?.short?.toLowerCase() || 'scheduled',
-              home_score: game.scores?.home?.total || null,
-              away_score: game.scores?.away?.total || null,
-              season_year: parseInt(config.season.split('-')[0]),
-              week_number: game.week || null,
-              data_source: 'api_sports'
-            };
-          });
-
-          gamesData.push(...mappedGames);
-        } else {
-          console.error(`API Sports ${sportType} fetch failed:`, response.status);
-        }
-      } catch (error) {
-        console.error(`Error fetching ${sportType} from API Sports:`, error);
-      }
+      const mockGames = createMockGames(sportType);
+      console.log(`Generated ${mockGames.length} mock ${sportType} games`);
+      gamesData.push(...mockGames);
     }
 
     // Insert or update games in database
@@ -143,15 +164,15 @@ serve(async (req) => {
         throw error;
       }
 
-      console.log(`Successfully updated ${uniqueGames.length} games from API Sports`);
+      console.log(`Successfully updated ${uniqueGames.length} mock games`);
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         gamesUpdated: gamesData.length,
-        message: `Updated ${gamesData.length} games from API Sports`,
-        source: 'API Sports'
+        message: `Updated ${gamesData.length} mock games`,
+        source: 'Mock Data'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
