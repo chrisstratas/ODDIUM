@@ -1,9 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Tv, RefreshCw } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Clock, MapPin, Tv, RefreshCw, CalendarIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Game {
   id: string;
@@ -29,19 +33,24 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    return { from: startOfWeek, to: endOfWeek };
+  });
 
   const fetchScheduleFromDB = async () => {
     try {
       setError(null);
-      const currentDate = new Date();
-      const weekStart = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
-      const weekEnd = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 7));
       
       let query = supabase
         .from('games_schedule')
         .select('*')
-        .gte('game_date', weekStart.toISOString().split('T')[0])
-        .lte('game_date', weekEnd.toISOString().split('T')[0])
+        .gte('game_date', dateRange.from.toISOString().split('T')[0])
+        .lte('game_date', dateRange.to.toISOString().split('T')[0])
         .order('game_date', { ascending: true });
 
       if (sport !== 'all') {
@@ -118,7 +127,17 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
 
   useEffect(() => {
     fetchScheduleFromDB();
-  }, [sport]);
+  }, [sport, dateRange]);
+
+  const updateDateRange = (selectedDate: Date) => {
+    const startOfWeek = new Date(selectedDate);
+    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    
+    setDateRange({ from: startOfWeek, to: endOfWeek });
+    setSelectedDate(selectedDate);
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -159,15 +178,44 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
             <span className="text-2xl">{getSportIcon()}</span>
             {sport} Live Scores - Fox Sports
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshSchedule}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Loading Fox Sports...' : 'Get Live Scores'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && updateDateRange(date)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshSchedule}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Loading Fox Sports...' : 'Get Live Scores'}
+            </Button>
+          </div>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Showing games from {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d, yyyy")}
         </div>
       </CardHeader>
       <CardContent>
@@ -184,11 +232,18 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
           </div>
         ) : games.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">No games scheduled for this week</p>
-            <Button onClick={refreshSchedule} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Get Fox Sports Scores
-            </Button>
+            <p className="text-muted-foreground mb-4">
+              No games scheduled for {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d, yyyy")}
+            </p>
+            <div className="flex justify-center gap-2">
+              <Button onClick={() => updateDateRange(new Date())} variant="outline" size="sm">
+                Current Week
+              </Button>
+              <Button onClick={refreshSchedule} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Get Fox Sports Scores
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
