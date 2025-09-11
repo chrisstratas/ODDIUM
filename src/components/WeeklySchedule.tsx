@@ -41,6 +41,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     return { from: startOfWeek, to: endOfWeek };
   });
+  const [dataSource, setDataSource] = useState<'live' | 'fallback'>('live');
 
   const fetchScheduleFromDB = async () => {
     try {
@@ -99,6 +100,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
       
       if (livesportResponse.error) {
         console.error('Livesport.com fetch error:', livesportResponse.error);
+        setDataSource('fallback');
         // Fallback to regular schedule fetch
         const fallbackResponse = await supabase.functions.invoke('fetch-sports-schedule', {
           body: { sport }
@@ -109,6 +111,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         }
         console.log('Fallback schedule refresh successful:', fallbackResponse.data);
       } else {
+        setDataSource('live');
         console.log('Livesport.com live scores refresh successful:', livesportResponse.data);
       }
       
@@ -176,10 +179,11 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <span className="text-2xl">{getSportIcon()}</span>
-            {sport} Live Scores - Livesport.com
+            {sport} Live Scores
           </CardTitle>
-          <div className="text-xs text-muted-foreground">
-            Livesport.com • SportsData.io fallback
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
+            {dataSource === 'live' ? 'Livesport.com' : 'SportsData.io fallback'}
           </div>
           <div className="flex items-center gap-2">
             <Popover>
