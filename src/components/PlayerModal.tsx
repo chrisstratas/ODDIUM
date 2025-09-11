@@ -1,11 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Target, BarChart3, Calendar, Star } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { 
+  TrendingUp, 
+  Target, 
+  BarChart3, 
+  Calendar, 
+  Star, 
+  Trophy,
+  Activity,
+  Clock,
+  Users,
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  Award
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerModalProps {
   isOpen: boolean;
@@ -15,13 +32,36 @@ interface PlayerModalProps {
   sport: string;
 }
 
+interface GameLog {
+  date: string;
+  opponent: string;
+  stat: string;
+  value: number;
+  line: number;
+  result: "Over" | "Under";
+  odds: string;
+  matchupGrade?: string;
+  usageRate?: number;
+  gameLocation?: "Home" | "Away";
+}
+
+interface UsageTrend {
+  period: string;
+  usage: number;
+  efficiency: number;
+  opportunities: number;
+}
+
 const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalProps) => {
   const [confidenceFilter, setConfidenceFilter] = useState([75]);
   const [valueFilter, setValueFilter] = useState([60]);
   const [recentFormFilter, setRecentFormFilter] = useState([50]);
   const [hitRateFilter, setHitRateFilter] = useState([65]);
+  const [gameLogsExpanded, setGameLogsExpanded] = useState(false);
+  const [headToHeadData, setHeadToHeadData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock player data - would come from database
+  // Enhanced mock player data - in production this would come from database
   const playerStats = {
     seasonAvg: 25.4,
     recentForm: 27.8,
@@ -31,27 +71,192 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
     totalProps: 156,
     winRate: 68.2,
     valueRating: "High",
-    trend: "Up 15% vs season avg"
+    trend: "Up 15% vs season avg",
+    matchupGrade: "A-",
+    usageRate: 28.5,
+    efficiency: 1.24,
+    restDaysAvg: 1.2,
+    homeAwayDiff: "+12% home"
   };
 
-  const recentGames = [
-    { date: "2024-01-15", stat: "Points", value: 28, line: 25.5, result: "Over", odds: "-110" },
-    { date: "2024-01-13", stat: "Points", value: 31, line: 25.5, result: "Over", odds: "-110" },
-    { date: "2024-01-11", stat: "Points", value: 22, line: 25.5, result: "Under", odds: "-110" },
-    { date: "2024-01-09", stat: "Points", value: 29, line: 25.5, result: "Over", odds: "-110" },
-    { date: "2024-01-07", stat: "Points", value: 25, line: 25.5, result: "Under", odds: "-110" }
+  // Comprehensive game logs with matchup analysis
+  const recentGames: GameLog[] = [
+    { 
+      date: "2024-01-15", 
+      opponent: "Lakers", 
+      stat: "Points", 
+      value: 28, 
+      line: 25.5, 
+      result: "Over", 
+      odds: "-110",
+      matchupGrade: "A",
+      usageRate: 32.1,
+      gameLocation: "Home"
+    },
+    { 
+      date: "2024-01-13", 
+      opponent: "Warriors", 
+      stat: "Points", 
+      value: 31, 
+      line: 25.5, 
+      result: "Over", 
+      odds: "-110",
+      matchupGrade: "A-",
+      usageRate: 29.8,
+      gameLocation: "Away"
+    },
+    { 
+      date: "2024-01-11", 
+      opponent: "Celtics", 
+      stat: "Points", 
+      value: 22, 
+      line: 25.5, 
+      result: "Under", 
+      odds: "-110",
+      matchupGrade: "C+",
+      usageRate: 26.4,
+      gameLocation: "Away"
+    },
+    { 
+      date: "2024-01-09", 
+      opponent: "Heat", 
+      stat: "Points", 
+      value: 29, 
+      line: 25.5, 
+      result: "Over", 
+      odds: "-110",
+      matchupGrade: "B+",
+      usageRate: 30.7,
+      gameLocation: "Home"
+    },
+    { 
+      date: "2024-01-07", 
+      opponent: "76ers", 
+      stat: "Points", 
+      value: 25, 
+      line: 25.5, 
+      result: "Under", 
+      odds: "-110",
+      matchupGrade: "B",
+      usageRate: 27.9,
+      gameLocation: "Home"
+    }
   ];
 
-  const props = [
-    { stat: "Points", line: 25.5, over: "-110", under: "-110", confidence: 85, value: "High", recent: "+2.4" },
-    { stat: "Rebounds", line: 8.5, over: "+105", under: "-125", confidence: 78, value: "Medium", recent: "+1.2" },
-    { stat: "Assists", line: 7.5, over: "-105", under: "-115", confidence: 82, value: "High", recent: "+0.8" },
-    { stat: "3-Pointers", line: 2.5, over: "+115", under: "-140", confidence: 71, value: "Medium", recent: "+0.3" }
+  // Usage trends over time
+  const usageTrends: UsageTrend[] = [
+    { period: "Last 5 Games", usage: 29.8, efficiency: 1.28, opportunities: 24.2 },
+    { period: "Last 10 Games", usage: 28.9, efficiency: 1.25, opportunities: 23.8 },
+    { period: "Last 15 Games", usage: 28.1, efficiency: 1.22, opportunities: 23.1 },
+    { period: "Season", usage: 27.6, efficiency: 1.19, opportunities: 22.7 }
   ];
+
+  // Enhanced props with matchup grades
+  const props = [
+    { 
+      stat: "Points", 
+      line: 25.5, 
+      over: "-110", 
+      under: "-110", 
+      confidence: 85, 
+      value: "High", 
+      recent: "+2.4",
+      matchupGrade: "A-",
+      oddsMovement: "↗ From -115",
+      sportsbooks: 4,
+      edge: 6.8
+    },
+    { 
+      stat: "Rebounds", 
+      line: 8.5, 
+      over: "+105", 
+      under: "-125", 
+      confidence: 78, 
+      value: "Medium", 
+      recent: "+1.2",
+      matchupGrade: "B+",
+      oddsMovement: "↘ From +100",
+      sportsbooks: 3,
+      edge: 4.2
+    },
+    { 
+      stat: "Assists", 
+      line: 7.5, 
+      over: "-105", 
+      under: "-115", 
+      confidence: 82, 
+      value: "High", 
+      recent: "+0.8",
+      matchupGrade: "A",
+      oddsMovement: "→ Stable",
+      sportsbooks: 5,
+      edge: 5.1
+    },
+    { 
+      stat: "3-Pointers", 
+      line: 2.5, 
+      over: "+115", 
+      under: "-140", 
+      confidence: 71, 
+      value: "Medium", 
+      recent: "+0.3",
+      matchupGrade: "C+",
+      oddsMovement: "↗ From +110",
+      sportsbooks: 2,
+      edge: 2.8
+    }
+  ];
+
+  // Fetch head-to-head data
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const fetchHeadToHeadData = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('player_matchups')
+          .select('*')
+          .eq('player_name', playerName)
+          .order('game_date', { ascending: false })
+          .limit(10);
+        
+        if (error) throw error;
+        setHeadToHeadData(data || []);
+      } catch (error) {
+        console.error('Error fetching head-to-head data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHeadToHeadData();
+  }, [isOpen, playerName]);
+
+  const getMatchupGradeColor = (grade: string) => {
+    const letter = grade.charAt(0);
+    switch (letter) {
+      case "A": return "bg-green-100 text-green-800 border-green-200";
+      case "B": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "C": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "D": return "bg-orange-100 text-orange-800 border-orange-200";
+      case "F": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getUsageChange = (current: number, previous: number) => {
+    const change = current - previous;
+    return {
+      value: Math.abs(change).toFixed(1),
+      direction: change > 0 ? "up" : change < 0 ? "down" : "stable",
+      color: change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : "text-gray-600"
+    };
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -59,14 +264,384 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
               <span className="text-2xl font-bold">{playerName}</span>
               <Badge variant="secondary">{team}</Badge>
               <Badge variant="outline">{sport}</Badge>
+              <Badge className={getMatchupGradeColor(playerStats.matchupGrade)}>
+                Grade: {playerStats.matchupGrade}
+              </Badge>
             </div>
           </DialogTitle>
           <DialogDescription>
-            Advanced analytics and performance insights for {playerName}
+            Comprehensive analytics, matchup analysis, and betting insights for {playerName}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Enhanced Player Stats Overview */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <CardContent className="p-4 text-center">
+                <Trophy className="h-5 w-5 mx-auto mb-1 text-blue-600" />
+                <div className="text-2xl font-bold text-blue-600">{playerStats.seasonAvg}</div>
+                <div className="text-sm text-blue-700">Season Avg</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+              <CardContent className="p-4 text-center">
+                <TrendingUp className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                <div className="text-2xl font-bold text-green-600">{playerStats.recentForm}</div>
+                <div className="text-sm text-green-700">Recent Form</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+              <CardContent className="p-4 text-center">
+                <Target className="h-5 w-5 mx-auto mb-1 text-yellow-600" />
+                <div className="text-2xl font-bold text-yellow-600">{playerStats.hitRate}%</div>
+                <div className="text-sm text-yellow-700">Hit Rate</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+              <CardContent className="p-4 text-center">
+                <Activity className="h-5 w-5 mx-auto mb-1 text-purple-600" />
+                <div className="text-2xl font-bold text-purple-600">{playerStats.usageRate}%</div>
+                <div className="text-sm text-purple-700">Usage Rate</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
+              <CardContent className="p-4 text-center">
+                <Zap className="h-5 w-5 mx-auto mb-1 text-indigo-600" />
+                <div className="text-2xl font-bold text-indigo-600">{playerStats.efficiency}</div>
+                <div className="text-sm text-indigo-700">Efficiency</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Detailed Analytics Tabs */}
+          <Tabs defaultValue="props" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="props">Current Props</TabsTrigger>
+              <TabsTrigger value="matchups">Matchup Grades</TabsTrigger>
+              <TabsTrigger value="logs">Game Logs</TabsTrigger>
+              <TabsTrigger value="usage">Usage Trends</TabsTrigger>
+              <TabsTrigger value="head2head">Head-to-Head</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="props" className="space-y-4">
+              <div className="grid gap-4">
+                {props.map((prop, index) => (
+                  <Card key={index} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="font-medium text-lg">{prop.stat}</div>
+                          <Badge variant="outline">Line: {prop.line}</Badge>
+                          <Badge variant={prop.value === "High" ? "default" : "secondary"}>
+                            {prop.value} Value
+                          </Badge>
+                          <Badge className={getMatchupGradeColor(prop.matchupGrade)}>
+                            {prop.matchupGrade}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">O/U: </span>
+                            <span className="text-positive-odds font-medium">{prop.over}</span>
+                            <span className="text-muted-foreground"> / </span>
+                            <span className="text-negative-odds font-medium">{prop.under}</span>
+                          </div>
+                          <div className="text-xs text-center">
+                            <div className="font-medium">Edge: +{prop.edge}%</div>
+                            <div className="text-muted-foreground">{prop.sportsbooks} books</div>
+                          </div>
+                          <div className="text-xs text-center">
+                            <div className="font-medium text-positive-odds">{prop.recent}</div>
+                            <div className="text-muted-foreground">{prop.oddsMovement}</div>
+                          </div>
+                          <Badge variant="outline">{prop.confidence}% Conf</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="matchups" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Matchup Analysis & Grades
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="p-4">
+                      <h4 className="font-medium mb-3">Opponent Defensive Rankings</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">vs Points Allowed</span>
+                          <Badge className="bg-green-100 text-green-800">28th (worst)</Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">vs Position</span>
+                          <Badge className="bg-yellow-100 text-yellow-800">15th</Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Pace Factor</span>
+                          <Badge className="bg-blue-100 text-blue-800">6th (fast)</Badge>
+                        </div>
+                      </div>
+                    </Card>
+                    <Card className="p-4">
+                      <h4 className="font-medium mb-3">Historical Performance</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">vs This Opponent</span>
+                          <span className="font-medium text-green-600">+3.2 avg</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Similar Matchups</span>
+                          <span className="font-medium text-green-600">72% over rate</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Rest Advantage</span>
+                          <span className="font-medium text-blue-600">+1.8 on 2+ days</span>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Matchup Grade Breakdown</h4>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="text-center p-3 rounded-lg bg-green-50 border border-green-200">
+                        <div className="text-2xl font-bold text-green-600">A-</div>
+                        <div className="text-sm text-green-700">Overall Grade</div>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-blue-50 border border-blue-200">
+                        <div className="text-2xl font-bold text-blue-600">B+</div>
+                        <div className="text-sm text-blue-700">Defensive Matchup</div>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-green-50 border border-green-200">
+                        <div className="text-2xl font-bold text-green-600">A</div>
+                        <div className="text-sm text-green-700">Pace/Style</div>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                        <div className="text-2xl font-bold text-yellow-600">B</div>
+                        <div className="text-sm text-yellow-700">Rest/Travel</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="logs" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Recent Game Logs
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setGameLogsExpanded(!gameLogsExpanded)}
+                    >
+                      {gameLogsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {gameLogsExpanded ? 'Less' : 'More'} Details
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Opponent</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Value</TableHead>
+                        <TableHead>Line</TableHead>
+                        <TableHead>Result</TableHead>
+                        <TableHead>Grade</TableHead>
+                        {gameLogsExpanded && <TableHead>Usage%</TableHead>}
+                        {gameLogsExpanded && <TableHead>Odds</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentGames.map((game, index) => (
+                        <TableRow key={index} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">{game.date}</TableCell>
+                          <TableCell>{game.opponent}</TableCell>
+                          <TableCell>
+                            <Badge variant={game.gameLocation === "Home" ? "default" : "outline"}>
+                              {game.gameLocation}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">{game.value}</TableCell>
+                          <TableCell className="text-muted-foreground">{game.line}</TableCell>
+                          <TableCell>
+                            <Badge variant={game.result === "Over" ? "default" : "secondary"}>
+                              {game.result}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getMatchupGradeColor(game.matchupGrade || "B")}>
+                              {game.matchupGrade}
+                            </Badge>
+                          </TableCell>
+                          {gameLogsExpanded && (
+                            <TableCell className="text-sm">
+                              {game.usageRate?.toFixed(1)}%
+                            </TableCell>
+                          )}
+                          {gameLogsExpanded && (
+                            <TableCell className="text-sm text-muted-foreground">
+                              {game.odds}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="usage" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    Usage & Efficiency Trends
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4">
+                    {usageTrends.map((trend, index) => {
+                      const prevTrend = usageTrends[index + 1];
+                      const usageChange = prevTrend ? getUsageChange(trend.usage, prevTrend.usage) : null;
+                      const efficiencyChange = prevTrend ? getUsageChange(trend.efficiency, prevTrend.efficiency) : null;
+                      
+                      return (
+                        <Card key={index} className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="font-medium">{trend.period}</div>
+                              <Badge variant="outline">{trend.opportunities} opp/game</Badge>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              <div className="text-center">
+                                <div className="text-sm text-muted-foreground">Usage Rate</div>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium">{trend.usage.toFixed(1)}%</span>
+                                  {usageChange && (
+                                    <span className={`text-xs ${usageChange.color}`}>
+                                      {usageChange.direction === "up" ? "↗" : usageChange.direction === "down" ? "↘" : "→"}
+                                      {usageChange.value}%
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-sm text-muted-foreground">Efficiency</div>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium">{trend.efficiency.toFixed(2)}</span>
+                                  {efficiencyChange && (
+                                    <span className={`text-xs ${efficiencyChange.color}`}>
+                                      {efficiencyChange.direction === "up" ? "↗" : efficiencyChange.direction === "down" ? "↘" : "→"}
+                                      {efficiencyChange.value}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="w-24">
+                                <Progress value={trend.usage} className="h-2" />
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <Card className="p-4 text-center">
+                      <Clock className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+                      <div className="text-lg font-bold">1.2</div>
+                      <div className="text-sm text-muted-foreground">Avg Rest Days</div>
+                    </Card>
+                    <Card className="p-4 text-center">
+                      <Users className="h-6 w-6 mx-auto mb-2 text-green-500" />
+                      <div className="text-lg font-bold">{playerStats.homeAwayDiff}</div>
+                      <div className="text-sm text-muted-foreground">Home Advantage</div>
+                    </Card>
+                    <Card className="p-4 text-center">
+                      <TrendingUp className="h-6 w-6 mx-auto mb-2 text-purple-500" />
+                      <div className="text-lg font-bold">↗ Trending</div>
+                      <div className="text-sm text-muted-foreground">Usage Direction</div>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="head2head" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Head-to-Head Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                      <p className="text-sm text-muted-foreground mt-2">Loading head-to-head data...</p>
+                    </div>
+                  ) : headToHeadData.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Opponent</TableHead>
+                          <TableHead>Stat</TableHead>
+                          <TableHead>Player Value</TableHead>
+                          <TableHead>Opponent Value</TableHead>
+                          <TableHead>Result</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {headToHeadData.map((matchup, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{new Date(matchup.game_date).toLocaleDateString()}</TableCell>
+                            <TableCell>{matchup.opponent_name}</TableCell>
+                            <TableCell>{matchup.stat_type}</TableCell>
+                            <TableCell className="font-medium">{matchup.player_value}</TableCell>
+                            <TableCell className="font-medium">{matchup.opponent_value}</TableCell>
+                            <TableCell>
+                              <Badge variant={matchup.result === "Win" ? "default" : "secondary"}>
+                                {matchup.result}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                      <p className="text-sm text-muted-foreground">
+                        No head-to-head data available for {playerName}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
           {/* Advanced Analytics Filters */}
           <Card>
             <CardHeader>
@@ -77,7 +652,6 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Confidence Filter */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">
                     Confidence Threshold: {confidenceFilter[0]}%
@@ -90,12 +664,7 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
                     step={5}
                     className="w-full"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Filter props by minimum confidence rating
-                  </p>
                 </div>
-
-                {/* Value Rating Filter */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">
                     Value Rating: {valueFilter[0]}%
@@ -108,12 +677,7 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
                     step={5}
                     className="w-full"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Filter by betting value percentage
-                  </p>
                 </div>
-
-                {/* Recent Form Filter */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">
                     Recent Form Weight: {recentFormFilter[0]}%
@@ -126,12 +690,7 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
                     step={10}
                     className="w-full"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Adjust weight of recent performance vs season average
-                  </p>
                 </div>
-
-                {/* Hit Rate Filter */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">
                     Minimum Hit Rate: {hitRateFilter[0]}%
@@ -144,12 +703,8 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
                     step={5}
                     className="w-full"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Filter props by historical success rate
-                  </p>
                 </div>
               </div>
-
               <div className="flex gap-2 mt-4">
                 <Button 
                   variant="outline" 
@@ -167,143 +722,6 @@ const PlayerModal = ({ isOpen, onClose, playerName, team, sport }: PlayerModalPr
               </div>
             </CardContent>
           </Card>
-
-          {/* Player Stats Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{playerStats.seasonAvg}</div>
-                <div className="text-sm text-muted-foreground">Season Avg</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-positive-odds">{playerStats.recentForm}</div>
-                <div className="text-sm text-muted-foreground">Recent Form</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-warning">{playerStats.hitRate}%</div>
-                <div className="text-sm text-muted-foreground">Hit Rate</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-accent">{playerStats.confidence}%</div>
-                <div className="text-sm text-muted-foreground">Confidence</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Detailed Analytics Tabs */}
-          <Tabs defaultValue="props" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="props">Current Props</TabsTrigger>
-              <TabsTrigger value="history">Recent Games</TabsTrigger>
-              <TabsTrigger value="trends">Trends & Insights</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="props" className="space-y-4">
-              <div className="grid gap-4">
-                {props.map((prop, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="font-medium">{prop.stat}</div>
-                          <Badge variant="outline">Line: {prop.line}</Badge>
-                          <Badge variant={prop.value === "High" ? "default" : "secondary"}>
-                            {prop.value} Value
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">O/U: </span>
-                            <span className="text-positive-odds">{prop.over}</span>
-                            <span className="text-muted-foreground"> / </span>
-                            <span className="text-negative-odds">{prop.under}</span>
-                          </div>
-                          <Badge variant="outline">{prop.confidence}% Conf</Badge>
-                          <div className="text-sm text-positive-odds">{prop.recent}</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="history" className="space-y-4">
-              <div className="space-y-3">
-                {recentGames.map((game, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{game.date}</span>
-                          <span className="text-muted-foreground">{game.stat}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-sm">
-                            <span className="font-medium">{game.value}</span>
-                            <span className="text-muted-foreground"> vs {game.line}</span>
-                          </div>
-                          <Badge 
-                            variant={game.result === "Over" ? "default" : "secondary"}
-                          >
-                            {game.result}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">{game.odds}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="trends" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Performance Trend
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="text-lg font-medium text-positive-odds">
-                        {playerStats.trend}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Recent form indicates improved performance across key metrics
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Key Insights
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      <div>• Strong home performance (+12% vs away)</div>
-                      <div>• Better against weak defenses (+8% vs bottom 10)</div>
-                      <div>• Rest advantage on 2+ days (+6% performance)</div>
-                      <div>• Prime time games boost (+4% in national TV games)</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
         </div>
       </DialogContent>
     </Dialog>

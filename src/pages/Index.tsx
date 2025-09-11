@@ -43,7 +43,6 @@ const Index = () => {
     return () => window.removeEventListener('globalDataRefresh', handleGlobalRefresh);
   }, [refetch]);
 
-  // Updated fallback props with current season data
   const fallbackProps = [
     {
       player: "Victor Wembanyama",
@@ -61,7 +60,9 @@ const Index = () => {
       hitRate: 76,
       edge: 6.8,
       sportsbook: "DraftKings",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      matchupGrade: "A-" as const,
+      usageTrend: "increasing" as const
     },
     {
       player: "Nikola Jokic",
@@ -79,7 +80,9 @@ const Index = () => {
       hitRate: 71,
       edge: 8.2,
       sportsbook: "FanDuel",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      matchupGrade: "A+" as const,
+      usageTrend: "stable" as const
     },
     {
       player: "Josh Allen",
@@ -97,7 +100,9 @@ const Index = () => {
       hitRate: 73,
       edge: 5.4,
       sportsbook: "BetMGM",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      matchupGrade: "B+" as const,
+      usageTrend: "increasing" as const
     },
     {
       player: "Connor McDavid",
@@ -115,7 +120,9 @@ const Index = () => {
       hitRate: 78,
       edge: 7.1,
       sportsbook: "Caesars",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      matchupGrade: "A" as const,
+      usageTrend: "stable" as const
     },
     {
       player: "Shohei Ohtani",
@@ -133,7 +140,9 @@ const Index = () => {
       hitRate: 74,
       edge: 6.3,
       sportsbook: "DraftKings",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      matchupGrade: "B+" as const,
+      usageTrend: "increasing" as const
     }
   ];
 

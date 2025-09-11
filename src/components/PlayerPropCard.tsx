@@ -23,6 +23,11 @@ interface PlayerPropCardProps {
   seasonAvg?: number;
   hitRate?: number;
   nextOpponent?: string;
+  edge?: number;
+  sportsbook?: string;
+  lastUpdated?: string;
+  matchupGrade?: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "F";
+  usageTrend?: "increasing" | "stable" | "decreasing";
 }
 
 const PlayerPropCard = ({ 
@@ -39,7 +44,12 @@ const PlayerPropCard = ({
   recentForm,
   seasonAvg,
   hitRate,
-  nextOpponent
+  nextOpponent,
+  edge,
+  sportsbook,
+  lastUpdated,
+  matchupGrade,
+  usageTrend
 }: PlayerPropCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
@@ -121,6 +131,27 @@ const PlayerPropCard = ({
       case "high": return <Star className="w-3 h-3" />;
       case "medium": return <AlertTriangle className="w-3 h-3" />;
       default: return null;
+    }
+  };
+
+  const getMatchupGradeColor = () => {
+    if (!matchupGrade) return "bg-muted text-muted-foreground";
+    const grade = matchupGrade.charAt(0);
+    switch (grade) {
+      case "A": return "bg-green-100 text-green-800 border-green-200";
+      case "B": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "C": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "D": return "bg-orange-100 text-orange-800 border-orange-200";
+      case "F": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const getUsageTrendIcon = () => {
+    switch (usageTrend) {
+      case "increasing": return <TrendingUp className="w-3 h-3 text-green-600" />;
+      case "decreasing": return <TrendingDown className="w-3 h-3 text-red-600" />;
+      default: return <span className="w-3 h-3 bg-gray-400 rounded-full" />;
     }
   };
 
@@ -212,12 +243,20 @@ const PlayerPropCard = ({
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-muted-foreground">Over%</div>
-                  <div className={`font-medium ${vsOpponentStats.overRate >= 60 ? 'text-positive-odds' : 'text-negative-odds'}`}>
-                    {vsOpponentStats.overRate.toFixed(0)}%
+                  <div className="text-muted-foreground">Grade</div>
+                  <div className={`font-medium px-2 py-1 rounded text-xs ${getMatchupGradeColor()}`}>
+                    {matchupGrade || 'N/A'}
                   </div>
                 </div>
               </div>
+              {vsOpponentStats.trend && (
+                <div className="mt-2 text-xs">
+                  <span className="text-muted-foreground">Trend: </span>
+                  <span className={`font-medium ${vsOpponentStats.trend === 'up' ? 'text-positive-odds' : 'text-negative-odds'}`}>
+                    {vsOpponentStats.trend === 'up' ? '↗ Improving' : '↘ Declining'}
+                  </span>
+                </div>
+              )}
             </div>
           )}
           {resolvedOpponent && !vsOpponentStats && (
@@ -225,8 +264,13 @@ const PlayerPropCard = ({
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
                 <span className="text-xs font-medium text-foreground">vs {resolvedOpponent}</span>
+                {matchupGrade && (
+                  <Badge className={`${getMatchupGradeColor()} text-xs ml-auto`}>
+                    {matchupGrade}
+                  </Badge>
+                )}
               </div>
-              <div className="text-xs text-muted-foreground mt-2">No matchup data found.</div>
+              <div className="text-xs text-muted-foreground mt-2">Analyzing matchup data...</div>
             </div>
             )}
 
