@@ -18,14 +18,16 @@ import heroImage from "@/assets/hero-sports.jpg";
 const MLB = () => {
   const [filters, setFilters] = useState({
     sortBy: 'value',
-    category: 'all', 
-    confidence: 'all'
+    category: 'all',
+    confidence: 'all',
+    sport: 'MLB'
   });
 
   const [sgpFilters, setSgpFilters] = useState({
     sortBy: 'value',
     category: 'mlb-batting',
-    confidence: 'all'
+    confidence: 'all',
+    sport: 'MLB'
   });
 
   const { props: liveProps, loading, error, refetch } = useAnalytics(filters);

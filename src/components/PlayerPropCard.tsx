@@ -46,12 +46,17 @@ const PlayerPropCard = ({
   const isPositiveOver = !overOdds.startsWith("-");
   const isPositiveUnder = !underOdds.startsWith("-");
 
-  // Determine sport based on stat type (simple heuristic)
+  // Determine sport based on stat type and team abbreviations
   const getSport = () => {
     if (stat.includes("Passing") || stat.includes("Rushing") || stat.includes("Receiving")) return "NFL";
-    if (stat.includes("Strikeouts") || stat.includes("Hits") || stat.includes("Home")) return "MLB";
-    if (stat.includes("Goals") || stat.includes("Saves") || (stat.includes("Assists") && team.includes("Rangers"))) return "NHL";
-    return "NBA";
+    if (stat.includes("Strikeouts") || stat.includes("Hits") || stat.includes("Home Run") || stat.includes("RBI")) return "MLB";
+    if (stat.includes("Goals") || stat.includes("Saves") || (stat.includes("Assists") && (team.includes("Rangers") || team.includes("EDM") || team.includes("TOR")))) return "NHL";
+    
+    // WNBA teams detection (common WNBA team abbreviations)
+    const wnbaTeams = ['LV', 'NY', 'CONN', 'CHI', 'ATL', 'WAS', 'IND', 'PHX', 'MIN', 'SEA', 'DAL', 'LAS'];
+    if (wnbaTeams.includes(team) || team.includes("Liberty") || team.includes("Aces")) return "WNBA";
+    
+    return "NBA"; // Default to NBA for basketball stats
   };
 
   // Resolve next opponent if not provided

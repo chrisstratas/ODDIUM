@@ -143,6 +143,10 @@ const createMockPropData = (sport: string) => {
     'NHL': [
       { PlayerName: 'Connor McDavid', Team: 'EDM', StatType: 'Points', Value: 1.5, OverOdds: '+120', UnderOdds: '-140', Confidence: 77 },
       { PlayerName: 'Leon Draisaitl', Team: 'EDM', StatType: 'Points', Value: 1.5, OverOdds: '+105', UnderOdds: '-125', Confidence: 74 }
+    ],
+    'WNBA': [
+      { PlayerName: "A'ja Wilson", Team: 'LV', StatType: 'Points', Value: 24.5, OverOdds: '+105', UnderOdds: '-125', Confidence: 82 },
+      { PlayerName: 'Breanna Stewart', Team: 'NY', StatType: 'Points', Value: 22.5, OverOdds: '+100', UnderOdds: '-120', Confidence: 79 }
     ]
   };
   
@@ -164,7 +168,8 @@ serve(async (req) => {
       { name: 'NBA', endpoint: 'nba' },
       { name: 'NFL', endpoint: 'nfl' },
       { name: 'MLB', endpoint: 'mlb' },
-      { name: 'NHL', endpoint: 'nhl' }
+      { name: 'NHL', endpoint: 'nhl' },
+      { name: 'WNBA', endpoint: 'wnba' }
     ];
 
     const results = [];
@@ -251,7 +256,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Updated analytics for ${results.length} total props across NBA, NFL, MLB, and NHL`,
+      message: `Updated analytics for ${results.length} total props across NBA, NFL, MLB, NHL, and WNBA`,
       data: results,
       breakdown: results.reduce((acc, curr) => {
         acc[curr.sport] = (acc[curr.sport] || 0) + 1;

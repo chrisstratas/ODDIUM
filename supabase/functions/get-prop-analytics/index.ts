@@ -24,12 +24,14 @@ serve(async (req) => {
     let sortBy = 'value';
     let category = 'all';
     let confidence = 'all';
+    let sport = 'all';
 
     try {
       const { searchParams } = new URL(req.url);
       sortBy = searchParams.get('sortBy') || sortBy;
       category = searchParams.get('category') || category;
       confidence = searchParams.get('confidence') || confidence;
+      sport = searchParams.get('sport') || sport;
     } catch (_) {}
 
     try {
@@ -38,16 +40,18 @@ serve(async (req) => {
         if (typeof body.sortBy === 'string') sortBy = body.sortBy;
         if (typeof body.category === 'string') category = body.category;
         if (typeof body.confidence === 'string') confidence = body.confidence;
+        if (typeof body.sport === 'string') sport = body.sport;
         if (typeof body.params === 'string') {
           const p = new URLSearchParams(body.params);
           sortBy = p.get('sortBy') || sortBy;
           category = p.get('category') || category;
           confidence = p.get('confidence') || confidence;
+          sport = p.get('sport') || sport;
         }
       }
     } catch (_) {}
 
-    console.log('Fetching prop analytics with filters:', { sortBy, category, confidence });
+    console.log('Fetching prop analytics with filters:', { sortBy, category, confidence, sport });
 
     // First, try to refresh data from Highlightly
     if (highlightlyApiKey) {
@@ -71,6 +75,11 @@ serve(async (req) => {
       .from('live_odds')
       .select('*');
 
+    // Apply sport filter first if specified
+    if (sport !== 'all') {
+      oddsQuery = oddsQuery.eq('sport', sport);
+    }
+    
     // Apply filters
     if (category !== 'all') {
       // Handle sport-specific categories
@@ -87,14 +96,24 @@ serve(async (req) => {
       }
       
       // Handle specific stat filters (keeping existing NBA filters for compatibility)
-      if (category === 'sgp-points') {
+      if (category === 'sgp-points' || category.includes('-scoring')) {
         oddsQuery = oddsQuery.eq('stat_type', 'Points');
-      } else if (category === 'sgp-rebounds') {
+      } else if (category === 'sgp-rebounds' || category.includes('-rebounds')) {
         oddsQuery = oddsQuery.eq('stat_type', 'Rebounds');
-      } else if (category === 'sgp-assists') {
+      } else if (category === 'sgp-assists' || category.includes('-assists')) {
         oddsQuery = oddsQuery.eq('stat_type', 'Assists');
-      } else if (category === 'sgp-threes') {
+      } else if (category === 'sgp-threes' || category.includes('-threes')) {
         oddsQuery = oddsQuery.eq('stat_type', '3-Pointers Made');
+      } else if (category.includes('-passing')) {
+        oddsQuery = oddsQuery.eq('stat_type', 'Passing Yards');
+      } else if (category.includes('-rushing')) {
+        oddsQuery = oddsQuery.eq('stat_type', 'Rushing Yards');
+      } else if (category.includes('-receiving')) {
+        oddsQuery = oddsQuery.eq('stat_type', 'Receiving Yards');
+      } else if (category.includes('-hits')) {
+        oddsQuery = oddsQuery.eq('stat_type', 'Hits');
+      } else if (category.includes('-goals')) {
+        oddsQuery = oddsQuery.eq('stat_type', 'Goals');
       }
     }
 
@@ -111,10 +130,16 @@ serve(async (req) => {
       throw oddsError;
     }
 
-    // Get analytics data for the players
-    const { data: analyticsData, error: analyticsError } = await supabase
+    // Get analytics data for the players - also filter by sport if specified
+    let analyticsQuery = supabase
       .from('prop_analytics')
       .select('*');
+    
+    if (sport !== 'all') {
+      analyticsQuery = analyticsQuery.eq('sport', sport);
+    }
+    
+    const { data: analyticsData, error: analyticsError } = await analyticsQuery;
 
     if (analyticsError) {
       console.error('Analytics query error:', analyticsError);
@@ -182,7 +207,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       props: formattedProps,
       total: formattedProps.length,
-      filters: { sortBy, category, confidence }
+      filters: { sortBy, category, confidence, sport }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

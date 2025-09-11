@@ -5,6 +5,7 @@ interface AnalyticsFilters {
   sortBy: string;
   category: string;
   confidence: string;
+  sport?: string; // Add sport filter
 }
 
 interface PropData {
@@ -39,7 +40,8 @@ export const useAnalytics = (filters: AnalyticsFilters) => {
       const params = new URLSearchParams({
         sortBy: filters.sortBy,
         category: filters.category,
-        confidence: filters.confidence
+        confidence: filters.confidence,
+        ...(filters.sport && { sport: filters.sport })
       });
 
       const { data, error: functionError } = await supabase.functions.invoke('get-prop-analytics', {
@@ -92,7 +94,7 @@ export const useAnalytics = (filters: AnalyticsFilters) => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [filters.sortBy, filters.category, filters.confidence]);
+  }, [filters.sortBy, filters.category, filters.confidence, filters.sport]);
 
   return {
     props,

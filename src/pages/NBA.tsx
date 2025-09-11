@@ -19,13 +19,15 @@ const NBA = () => {
   const [filters, setFilters] = useState({
     sortBy: 'value',
     category: 'all',
-    confidence: 'all'
+    confidence: 'all',
+    sport: 'NBA'
   });
 
   const [sgpFilters, setSgpFilters] = useState({
     sortBy: 'value',
     category: 'nba-scoring',
-    confidence: 'all'
+    confidence: 'all',
+    sport: 'NBA'
   });
 
   const { props: liveProps, loading, error, refetch } = useAnalytics(filters);

@@ -18,14 +18,16 @@ import heroImage from "@/assets/hero-sports.jpg";
 const NFL = () => {
   const [filters, setFilters] = useState({
     sortBy: 'value',
-    category: 'all', 
-    confidence: 'all'
+    category: 'all',
+    confidence: 'all',
+    sport: 'NFL'
   });
 
   const [sgpFilters, setSgpFilters] = useState({
     sortBy: 'value',
     category: 'nfl-passing',
-    confidence: 'all'
+    confidence: 'all',
+    sport: 'NFL'
   });
 
   const { props: liveProps, loading, error, refetch } = useAnalytics(filters);
