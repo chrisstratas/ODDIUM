@@ -30,90 +30,86 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
+    const sportradarApiKey = Deno.env.get('SPORTRADAR_API_KEY');
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     const { sport } = await req.json().catch(() => ({ sport: 'all' }));
     
-    console.log(`Fetching ${sport} daily schedule data from Highlightly for 2025-2026 season...`);
+    console.log(`Fetching ${sport} schedule data from SportRadar for 2025 season...`);
 
-    if (!highlightlyApiKey) {
-      console.error('HIGHLIGHTLY_API_KEY not found');
+    if (!sportradarApiKey) {
+      console.error('SPORTRADAR_API_KEY not found');
       return new Response(JSON.stringify({ 
-        error: 'Highlightly API key not configured',
-        message: 'Please configure HIGHLIGHTLY_API_KEY in Supabase secrets'
+        error: 'SportRadar API key not configured',
+        message: 'Please configure SPORTRADAR_API_KEY in Supabase secrets'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Function to fetch daily schedule from Highlightly API
-    const fetchHighlightlyDailySchedule = async (sportType: string) => {
-      const sportEndpoints: Record<string, string> = {
-        'NBA': 'nba',
-        'NFL': 'nfl',
-        'MLB': 'mlb', 
-        'NHL': 'nhl',
-        'WNBA': 'wnba'
-      };
-
-      const endpoint = sportEndpoints[sportType];
-      if (!endpoint) {
-        console.log(`No Highlightly endpoint found for ${sportType}`);
+    // Function to fetch schedule from SportRadar API
+    const fetchSportRadarSchedule = async (sportType: string) => {
+      if (sportType !== 'NFL') {
+        console.log(`SportRadar only supports NFL currently, ${sportType} not supported`);
         return [];
       }
 
       try {
-        console.log(`Fetching ${sportType} daily schedule from Highlightly...`);
+        console.log(`Fetching ${sportType} schedule from SportRadar...`);
         
-        // Get today's date for daily schedule
-        const today = new Date().toISOString().split('T')[0];
-        
-        const response = await fetch(`https://api.highlightly.com/v1/${endpoint}/schedule/daily?date=${today}&season=2025-2026`, {
+        const response = await fetch(`https://api.sportradar.com/nfl/official/trial/v7/en/games/2025/REG/schedule.json`, {
           headers: {
-            'Authorization': `Bearer ${highlightlyApiKey}`,
-            'Content-Type': 'application/json'
+            'accept': 'application/json'
           },
           method: 'GET'
         });
 
         if (!response.ok) {
-          console.error(`Highlightly ${sportType} daily schedule fetch failed:`, response.status, await response.text());
+          console.error(`SportRadar ${sportType} schedule fetch failed:`, response.status, await response.text());
           return [];
         }
 
         const data = await response.json();
-        console.log(`Received ${data.games?.length || 0} daily games from Highlightly for ${sportType} 2025-2026 season`);
+        console.log(`Received ${data.games?.length || 0} games from SportRadar for ${sportType} 2025 season`);
 
         const transformedGames = [];
         
         for (const game of data.games || []) {
+          // Parse date and time from scheduled timestamp
+          const scheduledDate = new Date(game.scheduled);
+          const gameDate = scheduledDate.toISOString().split('T')[0];
+          const gameTime = scheduledDate.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+          });
+
           transformedGames.push({
             id: crypto.randomUUID(),
-            game_id: game.game_id || `highlightly_daily_${sportType.toLowerCase()}_${Date.now()}_${Math.random()}`,
+            game_id: game.id || `sportradar_${sportType.toLowerCase()}_${Date.now()}_${Math.random()}`,
             sport: sportType,
-            home_team: game.home_team || game.home?.name || 'Home Team',
-            away_team: game.away_team || game.away?.name || 'Away Team',
-            game_date: game.game_date || game.date || today,
-            game_time: game.game_time || game.time || 'TBD',
-            venue: game.venue || game.stadium || null,
-            network: game.network || game.broadcast || null,
-            home_record: game.home_record || null,
-            away_record: game.away_record || null,
+            home_team: game.home?.name || 'Home Team',
+            away_team: game.away?.name || 'Away Team',
+            game_date: gameDate,
+            game_time: gameTime,
+            venue: game.venue?.name || null,
+            network: game.broadcast?.network || null,
+            home_record: null, // SportRadar doesn't provide record in schedule
+            away_record: null,
             status: game.status || 'scheduled',
-            home_score: game.home_score || null,
-            away_score: game.away_score || null,
-            season_year: 2025, // Force 2025-2026 season
-            week_number: game.week_number || game.week || null,
-            data_source: 'highlightly_daily'
+            home_score: game.home_points || null,
+            away_score: game.away_points || null,
+            season_year: 2025,
+            week_number: game.week || null,
+            data_source: 'sportradar'
           });
         }
 
         return transformedGames;
       } catch (error) {
-        console.error(`Error fetching ${sportType} daily schedule from Highlightly:`, error);
+        console.error(`Error fetching ${sportType} schedule from SportRadar:`, error);
         return [];
       }
     };
@@ -122,22 +118,19 @@ serve(async (req) => {
 
     // Determine which sports to fetch
     if (sport === 'all') {
-      const sports = ['NBA', 'NFL', 'MLB', 'NHL', 'WNBA'];
-      
-      for (const sportType of sports) {
-        const gameData = await fetchHighlightlyDailySchedule(sportType);
-        allGames = allGames.concat(gameData);
-      }
+      // Only fetch NFL from SportRadar for now
+      const gameData = await fetchSportRadarSchedule('NFL');
+      allGames = allGames.concat(gameData);
     } else {
-      const gameData = await fetchHighlightlyDailySchedule(sport.toUpperCase());
+      const gameData = await fetchSportRadarSchedule(sport.toUpperCase());
       allGames = allGames.concat(gameData);
     }
 
     if (allGames.length === 0) {
-      console.log('No daily schedule data available from Highlightly for 2025-2026 season');
+      console.log('No schedule data available from SportRadar for 2025 season');
       return new Response(JSON.stringify({ 
         success: false, 
-        message: 'No daily schedule data available for 2025-2026 season',
+        message: 'No schedule data available for 2025 season',
         games_updated: 0 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -174,10 +167,10 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: `Updated daily schedule with ${uniqueGames.length} games for 2025-2026 season from Highlightly`,
+      message: `Updated schedule with ${uniqueGames.length} games for 2025 season from SportRadar`,
       games_updated: uniqueGames.length,
-      season: '2025-2026',
-      source: 'Highlightly Daily',
+      season: '2025',
+      source: 'SportRadar',
       date: new Date().toISOString().split('T')[0]
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
