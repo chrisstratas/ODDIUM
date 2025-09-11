@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface HighlightlyGame {
+interface SportsBlazeGame {
   id: string;
   sport: string;
   home_team: string;
@@ -53,36 +53,36 @@ serve(async (req) => {
 
     let gamesData: any[] = [];
 
-    // Fetch from Highlightly API
-    const fetchHighlightlySchedule = async (sportType: string) => {
+    // Fetch from SPORTSBLAZE API
+    const fetchSportsBlazeSchedule = async (sportType: string) => {
       try {
-        const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
+        const sportsBlazeApiKey = Deno.env.get('SPORTSBLAZE_API_KEY');
         
-        if (!highlightlyApiKey) {
-          console.log('No Highlightly API key found, using mock data');
+        if (!sportsBlazeApiKey) {
+          console.log('No SPORTSBLAZE API key found, using mock data');
           return [];
         }
 
-        console.log(`Fetching ${sportType} schedule from Highlightly...`);
+        console.log(`Fetching ${sportType} schedule from SPORTSBLAZE...`);
         
-        const response = await fetch(`https://api.highlightly.com/v1/sports/${sportType.toLowerCase()}/schedule`, {
+        const response = await fetch(`https://api.sportsblaze.net/v1/schedule/${sportType.toLowerCase()}`, {
           headers: {
-            'Authorization': `Bearer ${highlightlyApiKey}`,
+            'X-API-Key': sportsBlazeApiKey,
             'Content-Type': 'application/json'
           }
         });
 
         if (!response.ok) {
-          console.error(`Highlightly ${sportType} schedule fetch failed:`, response.status, await response.text());
+          console.error(`SPORTSBLAZE ${sportType} schedule fetch failed:`, response.status, await response.text());
           return [];
         }
 
         const data = await response.json();
-        console.log(`Received ${data.games?.length || 0} ${sportType} games from Highlightly`);
+        console.log(`Received ${data.games?.length || 0} ${sportType} games from SPORTSBLAZE`);
 
-        // Transform Highlightly data to our format
+        // Transform SPORTSBLAZE data to our format
         return (data.games || []).map((game: any) => ({
-          game_id: `highlightly_${sportType.toLowerCase()}_${game.id}`,
+          game_id: `sportsblaze_${sportType.toLowerCase()}_${game.id}`,
           sport: sportType,
           home_team: game.home_team?.name || game.home_team,
           away_team: game.away_team?.name || game.away_team,
@@ -96,25 +96,26 @@ serve(async (req) => {
           week_number: game.week_number || game.week,
           season_year: game.season_year || new Date().getFullYear(),
           home_record: game.home_team?.record,
-          away_record: game.away_team?.record
+          away_record: game.away_team?.record,
+          data_source: 'sportsblaze'
         }));
 
       } catch (error) {
-        console.error(`Error fetching Highlightly ${sportType} schedule:`, error);
+        console.error(`Error fetching SPORTSBLAZE ${sportType} schedule:`, error);
         return [];
       }
     };
 
-    // Fetch from Highlightly API for all sports
+    // Fetch from SPORTSBLAZE API for all sports
     const sports = sport === 'all' ? ['NFL', 'NBA', 'MLB', 'NHL', 'WNBA'] : [sport];
     
     for (const sportType of sports) {
       try {
-        const highlightlyGames = await fetchHighlightlySchedule(sportType);
-        if (highlightlyGames.length > 0) {
-          gamesData.push(...highlightlyGames);
+        const sportsBlazeGames = await fetchSportsBlazeSchedule(sportType);
+        if (sportsBlazeGames.length > 0) {
+          gamesData.push(...sportsBlazeGames);
         } else {
-          // Fallback to mock data if Highlightly returns no data
+          // Fallback to mock data if SPORTSBLAZE returns no data
           const mockGames = getMockGamesForSport(sportType);
           gamesData.push(...mockGames);
         }
@@ -130,7 +131,7 @@ serve(async (req) => {
     function getMockGamesForSport(sportType: string) {
       const mockData: { [key: string]: any[] } = {
         'NFL': [{
-          game_id: 'nfl_mock_1',
+          game_id: 'sportsblaze_mock_nfl_1',
           sport: 'NFL',
           home_team: 'Buffalo Bills',
           away_team: 'Miami Dolphins',
@@ -144,10 +145,11 @@ serve(async (req) => {
           home_score: null,
           away_score: null,
           week_number: 2,
-          season_year: 2025
+          season_year: 2025,
+          data_source: 'sportsblaze_mock'
         }],
         'MLB': [{
-          game_id: 'mlb_mock_1',
+          game_id: 'sportsblaze_mock_mlb_1',
           sport: 'MLB',
           home_team: 'Los Angeles Dodgers',
           away_team: 'San Francisco Giants',
@@ -160,10 +162,11 @@ serve(async (req) => {
           status: 'scheduled',
           home_score: null,
           away_score: null,
-          season_year: 2025
+          season_year: 2025,
+          data_source: 'sportsblaze_mock'
         }],
         'NBA': [{
-          game_id: 'nba_mock_1',
+          game_id: 'sportsblaze_mock_nba_1',
           sport: 'NBA',
           home_team: 'Lakers',
           away_team: 'Warriors',
@@ -174,10 +177,11 @@ serve(async (req) => {
           home_record: 'Preseason',
           away_record: 'Preseason',
           status: 'scheduled',
-          season_year: 2025
+          season_year: 2025,
+          data_source: 'sportsblaze_mock'
         }],
         'NHL': [{
-          game_id: 'nhl_mock_1',
+          game_id: 'sportsblaze_mock_nhl_1',
           sport: 'NHL',
           home_team: 'Rangers',
           away_team: 'Devils',
@@ -188,10 +192,11 @@ serve(async (req) => {
           home_record: 'Preseason',
           away_record: 'Preseason',
           status: 'scheduled',
-          season_year: 2025
+          season_year: 2025,
+          data_source: 'sportsblaze_mock'
         }],
         'WNBA': [{
-          game_id: 'wnba_mock_1',
+          game_id: 'sportsblaze_mock_wnba_1',
           sport: 'WNBA',
           home_team: 'Las Vegas Aces',
           away_team: 'New York Liberty',
@@ -204,7 +209,8 @@ serve(async (req) => {
           status: 'final',
           home_score: 87,
           away_score: 92,
-          season_year: 2025
+          season_year: 2025,
+          data_source: 'sportsblaze_mock'
         }]
       };
       return mockData[sportType] || [];

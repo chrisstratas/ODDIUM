@@ -22,13 +22,90 @@ serve(async (req) => {
     
     console.log(`Generating mock ${sport} schedule data...`);
 
-    // Mock game data for all sports
+    // Fetch from SPORTSBLAZE API
+    const fetchSportsBlazeSchedule = async (sportType: string) => {
+      try {
+        const sportsBlazeApiKey = Deno.env.get('SPORTSBLAZE_API_KEY');
+        
+        if (!sportsBlazeApiKey) {
+          console.log('No SPORTSBLAZE API key found, using mock data');
+          return [];
+        }
+
+        console.log(`Fetching ${sportType} schedule from SPORTSBLAZE...`);
+        
+        const response = await fetch(`https://api.sportsblaze.net/v1/schedule/${sportType.toLowerCase()}`, {
+          headers: {
+            'X-API-Key': sportsBlazeApiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          console.error(`SPORTSBLAZE ${sportType} schedule fetch failed:`, response.status, await response.text());
+          return [];
+        }
+
+        const data = await response.json();
+        console.log(`Received ${data.games?.length || 0} ${sportType} games from SPORTSBLAZE`);
+
+        // Transform SPORTSBLAZE data to our format
+        return (data.games || []).map((game: any) => ({
+          id: crypto.randomUUID(),
+          game_id: `sportsblaze_${sportType.toLowerCase()}_${game.id}`,
+          sport: sportType,
+          home_team: game.home_team?.name || game.home_team,
+          away_team: game.away_team?.name || game.away_team,
+          game_date: game.game_date || game.date,
+          game_time: game.game_time || game.time || '12:00 PM ET',
+          venue: game.venue?.name || game.venue,
+          network: game.broadcast?.network || game.network,
+          status: game.status || 'scheduled',
+          home_score: game.home_score,
+          away_score: game.away_score,
+          week_number: game.week_number || game.week,
+          season_year: game.season_year || new Date().getFullYear(),
+          home_record: game.home_team?.record,
+          away_record: game.away_team?.record,
+          data_source: 'sportsblaze'
+        }));
+
+      } catch (error) {
+        console.error(`Error fetching SPORTSBLAZE ${sportType} schedule:`, error);
+        return [];
+      }
+    };
+
+    let gamesData: any[] = [];
+
+    // Fetch data from SPORTSBLAZE for requested sports
+    const sportsToFetch = sport === 'all' ? ['NFL', 'NBA', 'MLB', 'NHL', 'WNBA'] : [sport];
+
+    for (const sportType of sportsToFetch) {
+      try {
+        const sportsBlazeGames = await fetchSportsBlazeSchedule(sportType);
+        if (sportsBlazeGames.length > 0) {
+          gamesData.push(...sportsBlazeGames);
+        } else {
+          // Fallback to mock data if SPORTSBLAZE returns no data
+          const mockGames = createMockGames(sportType);
+          gamesData.push(...mockGames);
+        }
+      } catch (error) {
+        console.error(`Error processing ${sportType}:`, error);
+        // Fallback to mock data on error
+        const mockGames = createMockGames(sportType);
+        gamesData.push(...mockGames);
+      }
+    }
+
+    // Mock game data fallback function
     const createMockGames = (sportType: string) => {
       const mockGames = {
         'NFL': [
           {
             id: crypto.randomUUID(),
-            game_id: `mock_nfl_1`,
+            game_id: `sportsblaze_mock_nfl_1`,
             sport: 'NFL',
             home_team: 'Buffalo Bills',
             away_team: 'Miami Dolphins',
@@ -43,32 +120,13 @@ serve(async (req) => {
             away_score: null,
             season_year: 2025,
             week_number: 2,
-            data_source: 'mock_data'
-          },
-          {
-            id: crypto.randomUUID(),
-            game_id: `mock_nfl_2`,
-            sport: 'NFL',
-            home_team: 'Kansas City Chiefs',
-            away_team: 'Denver Broncos',
-            game_date: '2025-09-15',
-            game_time: '4:25 PM ET',
-            venue: 'Arrowhead Stadium',
-            network: 'CBS',
-            home_record: '0-0',
-            away_record: '0-0',
-            status: 'scheduled',
-            home_score: null,
-            away_score: null,
-            season_year: 2025,
-            week_number: 2,
-            data_source: 'mock_data'
+            data_source: 'sportsblaze_mock'
           }
         ],
         'NBA': [
           {
             id: crypto.randomUUID(),
-            game_id: `mock_nba_1`,
+            game_id: `sportsblaze_mock_nba_1`,
             sport: 'NBA',
             home_team: 'Los Angeles Lakers',
             away_team: 'Golden State Warriors',
@@ -83,13 +141,13 @@ serve(async (req) => {
             away_score: null,
             season_year: 2025,
             week_number: null,
-            data_source: 'mock_data'
+            data_source: 'sportsblaze_mock'
           }
         ],
         'MLB': [
           {
             id: crypto.randomUUID(),
-            game_id: `mock_mlb_1`,
+            game_id: `sportsblaze_mock_mlb_1`,
             sport: 'MLB',
             home_team: 'Los Angeles Dodgers',
             away_team: 'San Francisco Giants',
@@ -104,13 +162,13 @@ serve(async (req) => {
             away_score: null,
             season_year: 2025,
             week_number: null,
-            data_source: 'mock_data'
+            data_source: 'sportsblaze_mock'
           }
         ],
         'NHL': [
           {
             id: crypto.randomUUID(),
-            game_id: `mock_nhl_1`,
+            game_id: `sportsblaze_mock_nhl_1`,
             sport: 'NHL',
             home_team: 'New York Rangers',
             away_team: 'New Jersey Devils',
@@ -125,23 +183,33 @@ serve(async (req) => {
             away_score: null,
             season_year: 2025,
             week_number: null,
-            data_source: 'mock_data'
+            data_source: 'sportsblaze_mock'
+          }
+        ],
+        'WNBA': [
+          {
+            id: crypto.randomUUID(),
+            game_id: `sportsblaze_mock_wnba_1`,
+            sport: 'WNBA',
+            home_team: 'Las Vegas Aces',
+            away_team: 'New York Liberty',
+            game_date: '2025-09-15',
+            game_time: '9:00 PM ET',
+            venue: 'Michelob ULTRA Arena',
+            network: 'ESPN',
+            home_record: '32-8',
+            away_record: '30-10',
+            status: 'scheduled',
+            home_score: null,
+            away_score: null,
+            season_year: 2025,
+            week_number: null,
+            data_source: 'sportsblaze_mock'
           }
         ]
       };
       
       return mockGames[sportType as keyof typeof mockGames] || [];
-    };
-
-    let gamesData: any[] = [];
-
-    // Generate mock data for requested sports
-    const sportsToFetch = sport === 'all' ? ['NFL', 'NBA', 'MLB', 'NHL'] : [sport];
-
-    for (const sportType of sportsToFetch) {
-      const mockGames = createMockGames(sportType);
-      console.log(`Generated ${mockGames.length} mock ${sportType} games`);
-      gamesData.push(...mockGames);
     }
 
     // Insert or update games in database
