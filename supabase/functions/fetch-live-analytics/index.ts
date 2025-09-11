@@ -12,81 +12,116 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
 
-// Fetch from Highlightly.net API
-const fetchFromHighlightly = async (sport: string) => {
-  if (!highlightlyApiKey) {
-    console.log(`No Highlightly API key found, using mock data for ${sport}`);
-    return createMockPropData(sport);
-  }
-  
+// Fetch from FanDuel API
+const fetchFromFanDuel = async (sport: string) => {
   try {
-    console.log(`Fetching ${sport} data from Highlightly...`);
+    console.log(`Fetching ${sport} odds from FanDuel...`);
     
-    // Highlightly API endpoints for different sports
+    // FanDuel API endpoints for different sports
     const endpoints = {
-      'NBA': 'basketball/nba/players/props',
-      'NFL': 'football/nfl/players/props', 
-      'MLB': 'baseball/mlb/players/props',
-      'NHL': 'hockey/nhl/players/props'
+      'NBA': 'basketball_nba',
+      'NFL': 'americanfootball_nfl', 
+      'MLB': 'baseball_mlb',
+      'NHL': 'icehockey_nhl'
     };
     
-    const endpoint = endpoints[sport as keyof typeof endpoints];
-    if (!endpoint) {
-      console.log(`No endpoint found for ${sport}, using mock data`);
+    const sportKey = endpoints[sport as keyof typeof endpoints];
+    if (!sportKey) {
+      console.log(`No FanDuel endpoint found for ${sport}, using mock data`);
       return createMockPropData(sport);
     }
     
-    const response = await fetch(`https://api.highlightly.net/v1/${endpoint}`, {
+    // Use The Odds API to get FanDuel odds
+    const oddsApiKey = Deno.env.get('ODDS_API_KEY') || 'demo'; // You'll need to add this secret
+    const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${oddsApiKey}&regions=us&markets=player_props&bookmakers=fanduel`, {
       headers: { 
-        'Authorization': `Bearer ${highlightlyApiKey}`,
         'Content-Type': 'application/json'
       }
     });
     
     if (response.ok) {
       const data = await response.json();
-      console.log(`Received ${data.length || 0} props from Highlightly for ${sport}`);
+      console.log(`Received ${data.length || 0} games with FanDuel odds for ${sport}`);
       
-      // Transform Highlightly data to our format
-      const transformedData = (data.players || data || []).map((player: any) => ({
-        PlayerName: player.name || `${player.firstName || ''} ${player.lastName || ''}`.trim(),
-        Team: player.team || player.teamAbbreviation || 'Unknown',
-        StatType: mapHighlightlyStatType(player.statType || player.prop_type),
-        Value: player.value || player.line || player.projection || Math.random() * 30 + 15,
-        OverOdds: player.over_odds || player.overOdds || '+100',
-        UnderOdds: player.under_odds || player.underOdds || '-110',
-        Confidence: player.confidence || Math.floor(Math.random() * 35 + 60)
-      }));
+      // Transform FanDuel data to our format
+      const transformedData = [];
+      
+      for (const game of data || []) {
+        const markets = game.bookmakers?.[0]?.markets || [];
+        
+        for (const market of markets) {
+          if (market.key.includes('player_')) {
+            for (const outcome of market.outcomes || []) {
+              const player = extractPlayerName(outcome.description);
+              const statType = mapFanDuelMarketToStatType(market.key, sport);
+              
+              transformedData.push({
+                PlayerName: player,
+                Team: getTeamFromGame(game, player),
+                StatType: statType,
+                Value: outcome.point || Math.random() * 30 + 15,
+                OverOdds: outcome.name === 'Over' ? outcome.price : findCorrespondingOdds(market.outcomes, 'Over'),
+                UnderOdds: outcome.name === 'Under' ? outcome.price : findCorrespondingOdds(market.outcomes, 'Under'),
+                Confidence: calculateConfidence(outcome.price)
+              });
+            }
+          }
+        }
+      }
       
       return transformedData.length > 0 ? transformedData : createMockPropData(sport);
     } else {
-      console.error(`Highlightly ${sport} fetch failed:`, response.status, await response.text());
+      console.error(`FanDuel ${sport} fetch failed:`, response.status, await response.text());
       return createMockPropData(sport);
     }
   } catch (error) {
-    console.error(`Highlightly ${sport} error:`, error);
+    console.error(`FanDuel ${sport} error:`, error);
     return createMockPropData(sport);
   }
 };
 
-// Map Highlightly stat types to our format
-const mapHighlightlyStatType = (statType: string): string => {
+// Helper functions for FanDuel data processing
+const extractPlayerName = (description: string): string => {
+  // Extract player name from descriptions like "LeBron James Over 25.5 Points"
+  const match = description.match(/^([A-Za-z\s]+?)\s+(Over|Under)/);
+  return match ? match[1].trim() : 'Unknown Player';
+};
+
+const mapFanDuelMarketToStatType = (marketKey: string, sport: string): string => {
   const mappings: Record<string, string> = {
-    'points': 'Points',
-    'rebounds': 'Rebounds',
-    'assists': 'Assists',
-    'passing_yards': 'Passing Yards',
-    'rushing_yards': 'Rushing Yards',
-    'receiving_yards': 'Receiving Yards',
-    'receptions': 'Receptions',
-    'hits': 'Hits',
-    'runs': 'Runs',
-    'rbis': 'RBIs',
-    'goals': 'Goals',
-    'shots_on_goal': 'Shots on Goal'
+    'player_points': 'Points',
+    'player_rebounds': 'Rebounds',
+    'player_assists': 'Assists',
+    'player_threes': '3-Pointers Made',
+    'player_passing_yards': 'Passing Yards',
+    'player_rushing_yards': 'Rushing Yards',
+    'player_receiving_yards': 'Receiving Yards',
+    'player_receptions': 'Receptions',
+    'player_hits': 'Hits',
+    'player_runs': 'Runs',
+    'player_rbis': 'RBIs',
+    'player_goals': 'Goals',
+    'player_shots_on_goal': 'Shots on Goal'
   };
   
-  return mappings[statType?.toLowerCase()] || statType || 'Points';
+  return mappings[marketKey] || 'Points';
+};
+
+const getTeamFromGame = (game: any, playerName: string): string => {
+  // Simple logic to assign team - in practice you'd need player-team mapping
+  return game.home_team || game.away_team || 'Unknown';
+};
+
+const findCorrespondingOdds = (outcomes: any[], type: string): string => {
+  const outcome = outcomes.find(o => o.name === type);
+  return outcome ? outcome.price : '+100';
+};
+
+const calculateConfidence = (odds: string | number): number => {
+  // Convert odds to implied probability and scale to confidence score
+  const numericOdds = typeof odds === 'string' ? parseFloat(odds) : odds;
+  const impliedProb = numericOdds > 0 ? 100 / (numericOdds + 100) : Math.abs(numericOdds) / (Math.abs(numericOdds) + 100);
+  return Math.floor(impliedProb * 100);
 };
 
 // Fallback mock data function
@@ -136,8 +171,8 @@ serve(async (req) => {
 
     for (const sport of sports) {
       try {
-        // Fetch from Highlightly API
-        let responseData = await fetchFromHighlightly(sport.name);
+        // Fetch from FanDuel API
+        let responseData = await fetchFromFanDuel(sport.name);
 
         console.log(`Processing ${responseData.length} ${sport.name} records`);
 
@@ -184,7 +219,7 @@ serve(async (req) => {
               line: prop.Value || 0,
               over_odds: prop.OverOdds || '+100',
               under_odds: prop.UnderOdds || '-110',
-              sportsbook: 'Highlightly',
+              sportsbook: 'FanDuel',
               confidence_score: prop.Confidence || Math.floor(hitRate),
               value_rating: edge > 2 ? 'high' : edge > -1 ? 'medium' : 'low',
               last_updated: new Date().toISOString()
