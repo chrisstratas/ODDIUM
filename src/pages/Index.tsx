@@ -10,8 +10,8 @@ import RiskRewardAnalyzer from "@/components/RiskRewardAnalyzer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { useRefresh } from "@/contexts/RefreshContext";
 import { RotateCcw, Database, TrendingUp, Target, BarChart3 } from "lucide-react";
 
 const Index = () => {
@@ -29,51 +29,17 @@ const Index = () => {
 
   const { props: liveProps, loading, error, refetch } = useAnalytics(filters);
   const { props: sgpProps } = useAnalytics(sgpFilters);
-  const [refreshing, setRefreshing] = useState(false);
+  const { refreshAll, isRefreshing } = useRefresh();
 
-  const populateMatchupData = async () => {
-    setRefreshing(true);
-    try {
-      console.log('Populating matchup database...');
-      const response = await supabase.functions.invoke('populate-matchups');
-      
-      if (response.error) {
-        console.error('Error populating matchups:', response.error);
-        throw response.error;
-      }
-      
-      console.log('Matchup data populated successfully:', response.data);
-      setRefreshing(false);
-    } catch (err) {
-      console.error('Error:', err);
-      setRefreshing(false);
-    }
-  };
-
-  const populateDatabase = async () => {
-    setRefreshing(true);
-    try {
-      console.log('Populating database with sample data...');
-      const response = await supabase.functions.invoke('fetch-live-analytics');
-      
-      if (response.error) {
-        console.error('Error populating database:', response.error);
-        throw response.error;
-      }
-      
-      console.log('Database populated successfully:', response.data);
-      
-      // Wait a moment for data to be inserted, then refetch
-      setTimeout(() => {
-        refetch();
-        setRefreshing(false);
-      }, 1500);
-      
-    } catch (err) {
-      console.error('Error:', err);
-      setRefreshing(false);
-    }
-  };
+  // Listen for global refresh events to refetch data
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      setTimeout(() => refetch(), 2000); // Wait for data to be processed
+    };
+    
+    window.addEventListener('globalDataRefresh', handleGlobalRefresh);
+    return () => window.removeEventListener('globalDataRefresh', handleGlobalRefresh);
+  }, [refetch]);
 
   // Updated fallback props with current season data
   const fallbackProps = [
@@ -196,20 +162,11 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   className="bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow"
-                  onClick={populateMatchupData}
-                  disabled={refreshing}
+                  onClick={refreshAll}
+                  disabled={isRefreshing}
                 >
-                  <Database className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                  {refreshing ? 'Loading...' : 'Load Analytics Data'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={populateDatabase}
-                  disabled={refreshing}
-                >
-                  <RotateCcw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                  {refreshing ? 'Loading...' : 'Load Live Props'}
+                  <Database className={`h-5 w-5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Loading...' : 'Load All Data'}
                 </Button>
               </div>
             </div>

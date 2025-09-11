@@ -47,7 +47,8 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     return { from: startOfWeek, to: endOfWeek };
   });
-  const [dataSource, setDataSource] = useState<'live' | 'fallback'>('live');
+  const [dataSource, setDataSource] = useState<'live' | 'fallback' | 'api'>('api');
+  const { refreshAll, isRefreshing } = useRefresh();
 
   const fetchScheduleFromDB = async () => {
     try {
@@ -121,45 +122,15 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
     }
   };
 
-  const refreshSchedule = async () => {
-    setRefreshing(true);
-    try {
-      console.log('Refreshing schedule with TheScore.com data...');
-      
-      // Use TheScore.com as primary source
-      const theScoreResponse = await supabase.functions.invoke('fetch-thescore-data', {
-        body: { sport }
-      });
-      
-      if (theScoreResponse.error) {
-        console.error('TheScore.com fetch error:', theScoreResponse.error);
-        setDataSource('fallback');
-        // Fallback to SportsData.io
-        const fallbackResponse = await supabase.functions.invoke('fetch-sports-schedule', {
-          body: { sport }
-        });
-        
-        if (fallbackResponse.error) {
-          throw fallbackResponse.error;
-        }
-        console.log('Fallback schedule refresh successful:', fallbackResponse.data);
-      } else {
-        setDataSource('live');
-        console.log('TheScore.com data refresh successful:', theScoreResponse.data);
-      }
-      
-      // Wait a moment then refetch from DB
-      setTimeout(() => {
-        fetchScheduleFromDB();
-        setRefreshing(false);
-      }, 2000);
-      
-    } catch (err) {
-      console.error('Error refreshing schedule:', err);
-      setError('Failed to refresh schedule data');
-      setRefreshing(false);
-    }
-  };
+  // Listen for global refresh events
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      setTimeout(() => fetchScheduleFromDB(), 2000);
+    };
+    
+    window.addEventListener('globalDataRefresh', handleGlobalRefresh);
+    return () => window.removeEventListener('globalDataRefresh', handleGlobalRefresh);
+  }, []);
 
   useEffect(() => {
     fetchScheduleFromDB();
@@ -251,11 +222,11 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={refreshSchedule}
-              disabled={refreshing}
+              onClick={refreshAll}
+              disabled={isRefreshing}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Loading TheScore...' : 'Get Live Scores'}
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Loading...' : 'Load Latest'}
             </Button>
           </div>
         </div>
@@ -271,7 +242,7 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
         ) : error ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={refreshSchedule} variant="outline" size="sm">
+            <Button onClick={refreshAll} variant="outline" size="sm">
               Try Again
             </Button>
           </div>
@@ -284,9 +255,9 @@ const WeeklySchedule = ({ sport }: WeeklyScheduleProps) => {
               <Button onClick={() => updateDateRange(new Date())} variant="outline" size="sm">
                 Current Week
               </Button>
-              <Button onClick={refreshSchedule} variant="outline" size="sm">
+              <Button onClick={refreshAll} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Get Live Scores
+                Load Latest
               </Button>
             </div>
           </div>
