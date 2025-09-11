@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Star, AlertTriangle, User, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Star, AlertTriangle, User, Target, Brain, Activity, BarChart3 } from "lucide-react";
 import PlayerModal from "./PlayerModal";
 import { usePlayerMatchups } from "@/hooks/usePlayerMatchups";
+import { usePlayerInsights } from "@/hooks/usePlayerInsights";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerPropCardProps {
@@ -41,6 +42,7 @@ const PlayerPropCard = ({
   nextOpponent
 }: PlayerPropCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const isPositiveOver = !overOdds.startsWith("-");
   const isPositiveUnder = !underOdds.startsWith("-");
 
@@ -89,6 +91,15 @@ const PlayerPropCard = ({
     sport: getSport(),
     statType: stat,
     gameLimit: 50
+  });
+
+  // Get AI-powered insights for this player prop
+  const { insights: playerInsights, loading: insightsLoading } = usePlayerInsights({
+    playerName: player,
+    team,
+    stat,
+    sport: getSport(),
+    line
   });
 
   const getValueColor = () => {
@@ -212,7 +223,91 @@ const PlayerPropCard = ({
               </div>
               <div className="text-xs text-muted-foreground mt-2">No matchup data found.</div>
             </div>
-          )}
+            )}
+
+          {/* AI Insights Section */}
+          <div className="mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowInsights(!showInsights)}
+              className="w-full justify-between p-2 h-auto hover:bg-muted/50"
+            >
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">AI Insights</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {showInsights ? 'Hide' : 'Show'}
+              </div>
+            </Button>
+            
+            {showInsights && (
+              <div className="mt-3 space-y-3">
+                {insightsLoading ? (
+                  <div className="p-3 bg-muted/50 rounded-lg border border-border text-center">
+                    <Brain className="w-6 h-6 mx-auto mb-2 animate-pulse text-primary" />
+                    <p className="text-xs text-muted-foreground">Analyzing player data...</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Current Prop Analysis */}
+                    {playerInsights.currentPropInsight && (
+                      <div className="p-3 bg-gradient-subtle rounded-lg border border-border">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="w-4 h-4 text-primary" />
+                          <span className="text-xs font-medium text-foreground">Current Prop Analysis</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {playerInsights.currentPropInsight}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Recent Performance Trend */}
+                    {playerInsights.recentTrend && (
+                      <div className="p-3 bg-gradient-subtle rounded-lg border border-border">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Activity className="w-4 h-4 text-primary" />
+                          <span className="text-xs font-medium text-foreground">Recent Trend</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {playerInsights.recentTrend}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Sport-Specific Metrics */}
+                    {playerInsights.sportMetrics && playerInsights.sportMetrics.length > 0 && (
+                      <div className="p-3 bg-gradient-subtle rounded-lg border border-border">
+                        <div className="flex items-center gap-2 mb-2">
+                          <BarChart3 className="w-4 h-4 text-primary" />
+                          <span className="text-xs font-medium text-foreground">Key {getSport()} Metrics</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {playerInsights.sportMetrics.map((metric, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {metric}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Fallback content when no insights are available */}
+                    {!playerInsights.currentPropInsight && !playerInsights.recentTrend && (!playerInsights.sportMetrics || playerInsights.sportMetrics.length === 0) && (
+                      <div className="p-3 bg-muted/50 rounded-lg border border-border text-center">
+                        <Brain className="w-8 h-8 mx-auto mb-2 opacity-50 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">
+                          AI insights will be generated based on recent performance data and prop analysis.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-2">
             <Button 
