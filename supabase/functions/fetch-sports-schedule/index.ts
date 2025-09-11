@@ -294,11 +294,17 @@ serve(async (req) => {
     if (gamesData.length > 0) {
       console.log(`Upserting ${gamesData.length} games to database...`);
       
+      // Remove duplicates from batch before inserting
+      const uniqueGames = gamesData.filter((game, index, self) => 
+        index === self.findIndex(g => g.game_id === game.game_id)
+      );
+      
+      console.log(`Reduced ${gamesData.length} to ${uniqueGames.length} unique games`);
+      
       const { error } = await supabase
         .from('games_schedule')
-        .upsert(gamesData, { 
-          onConflict: 'game_id',
-          ignoreDuplicates: false 
+        .upsert(uniqueGames, { 
+          onConflict: 'game_id'
         });
 
       if (error) {

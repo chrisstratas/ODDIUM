@@ -162,6 +162,7 @@ serve(async (req) => {
               const correctedSport = validateTeamSport(homeTeam, sportType) || validateTeamSport(awayTeam, sportType) || sportType;
               
               return {
+                id: crypto.randomUUID(),
                 game_id: `thescore_${correctedSport.toLowerCase()}_${Date.now()}_${index}`,
                 sport: correctedSport,
                 home_team: homeTeam,
@@ -222,6 +223,7 @@ serve(async (req) => {
               const correctedSport = validateTeamSport(homeTeam, sportType) || validateTeamSport(awayTeam, sportType) || sportType;
               
               games.push({
+                id: crypto.randomUUID(),
                 game_id: `thescore_${correctedSport.toLowerCase()}_${gameData.id || key}`,
                 sport: correctedSport,
                 home_team: homeTeam,
@@ -256,6 +258,7 @@ serve(async (req) => {
       const sampleGames = {
         'NFL': [
           {
+            id: crypto.randomUUID(),
             game_id: `thescore_nfl_${Date.now()}`,
             sport: 'NFL',
             home_team: 'Chiefs',
@@ -274,6 +277,7 @@ serve(async (req) => {
         ],
         'MLB': [
           {
+            id: crypto.randomUUID(),
             game_id: `thescore_mlb_${Date.now()}`,
             sport: 'MLB',
             home_team: 'Dodgers',
@@ -291,6 +295,7 @@ serve(async (req) => {
         ],
         'NBA': [
           {
+            id: crypto.randomUUID(),
             game_id: `thescore_nba_${Date.now()}`,
             sport: 'NBA',
             home_team: 'Lakers',
@@ -308,6 +313,7 @@ serve(async (req) => {
         ],
         'NHL': [
           {
+            id: crypto.randomUUID(),
             game_id: `thescore_nhl_${Date.now()}`,
             sport: 'NHL',
             home_team: 'Rangers',
@@ -325,6 +331,7 @@ serve(async (req) => {
         ],
         'WNBA': [
           {
+            id: crypto.randomUUID(),
             game_id: `thescore_wnba_${Date.now()}`,
             sport: 'WNBA',
             home_team: 'Aces',
