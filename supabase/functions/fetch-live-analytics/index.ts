@@ -10,40 +10,27 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const sportsDataApiKey = Deno.env.get('SPORTSDATA_API_KEY');
-const apiSportsKey = Deno.env.get('API_SPORTS_KEY');
 const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
 
-// API Sports endpoint mapping
-const apiSportsEndpoints = {
-  'NBA': { league: 12, season: '2024-2025' },
-  'NFL': { league: 1, season: '2024' },
-  'MLB': { league: 1, season: '2024' },
-  'NHL': { league: 57, season: '2024-2025' }
-};
-
-// Fetch from API Sports
-const fetchFromApiSports = async (sport: string) => {
-  if (!apiSportsKey) return [];
-  
-  const config = apiSportsEndpoints[sport as keyof typeof apiSportsEndpoints];
-  if (!config) return [];
+// Fetch from Highlightly.net
+const fetchFromHighlightly = async (sport: string) => {
+  if (!highlightlyApiKey) return [];
   
   try {
-    console.log(`Fetching ${sport} data from API Sports...`);
-    const response = await fetch(`https://v1.american-football.api-sports.io/players?league=${config.league}&season=${config.season}`, {
-      headers: {
-        'X-RapidAPI-Key': apiSportsKey,
-        'X-RapidAPI-Host': 'v1.american-football.api-sports.io'
+    console.log(`Fetching ${sport} data from Highlightly...`);
+    const response = await fetch(`https://api.highlightly.net/v1/${sport.toLowerCase()}/players`, {
+      headers: { 
+        'Authorization': `Bearer ${highlightlyApiKey}`,
+        'Content-Type': 'application/json'
       }
     });
     
     if (response.ok) {
       const data = await response.json();
-      return data.response || [];
+      return data.players || data || [];
     }
   } catch (error) {
-    console.error(`API Sports ${sport} error:`, error);
+    console.error(`Highlightly ${sport} error:`, error);
   }
   
   return [];
@@ -84,10 +71,10 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    if (!sportsDataApiKey) {
-      console.error('SportsDataIO API key not found');
+    if (!highlightlyApiKey) {
+      console.error('Highlightly API key not found');
       return new Response(JSON.stringify({ 
-        error: 'SportsDataIO API key not configured' 
+        error: 'Highlightly API key not configured' 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -108,66 +95,17 @@ serve(async (req) => {
       try {
         console.log(`Fetching ${sport.name} player props...`);
         
-        // Try multiple data sources for better coverage
-        let responseData = [];
+        // Fetch from Highlightly.net as primary source
+        let responseData = await fetchFromHighlightly(sport.name);
         
-        // First try API Sports
-        if (apiSportsKey) {
-          const apiSportsData = await fetchFromApiSports(sport.name);
-          if (apiSportsData.length > 0) {
-            responseData = apiSportsData.map((player: any) => ({
-              PlayerName: player.name || player.firstname + ' ' + player.lastname,
-              Team: player.team?.name || 'Unknown',
-              StatType: 'Points',
-              Value: Math.random() * 30 + 15 // Generate realistic values
-            }));
-          }
-        }
-        
-        // Fallback to SportsData.io and Highlightly if API Sports fails
-        if (responseData.length === 0) {
-          // Try SportsData.io
-          if (sportsDataApiKey) {
-            const sportsDataEndpoints = [
-              `https://api.sportsdata.io/v3/${sport.endpoint}/scores/json/PlayerGameStatsByDate/2024-DEC-15`,
-              `https://api.sportsdata.io/v3/${sport.endpoint}/scores/json/PlayerSeasonStats/2024`,
-              `https://api.sportsdata.io/v3/${sport.endpoint}/scores/json/Players`
-            ];
-            
-            for (const endpoint of sportsDataEndpoints) {
-              try {
-                const response = await fetch(endpoint, {
-                  headers: { 'Ocp-Apim-Subscription-Key': sportsDataApiKey }
-                });
-                
-                if (response.ok) {
-                  responseData = await response.json();
-                  if (responseData && responseData.length > 0) break;
-                }
-              } catch (endpointError) {
-                console.log(`SportsData endpoint ${endpoint} failed, trying next...`);
-              }
-            }
-          }
-          
-          // Try Highlightly.net if SportsData.io fails
-          if (responseData.length === 0 && highlightlyApiKey) {
-            try {
-              const response = await fetch(`https://api.highlightly.net/v1/${sport.name.toLowerCase()}/players`, {
-                headers: { 
-                  'Authorization': `Bearer ${highlightlyApiKey}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-              
-              if (response.ok) {
-                const highlightlyData = await response.json();
-                responseData = highlightlyData.players || highlightlyData || [];
-              }
-            } catch (highlightlyError) {
-              console.log(`Highlightly ${sport.name} failed:`, highlightlyError);
-            }
-          }
+        // Transform Highlightly data to our format
+        if (responseData.length > 0) {
+          responseData = responseData.map((player: any) => ({
+            PlayerName: player.name || `${player.firstName} ${player.lastName}`,
+            Team: player.team || player.teamAbbreviation || 'Unknown',
+            StatType: player.statType || 'Points',
+            Value: player.value || player.projection || Math.random() * 30 + 15
+          }));
         }
 
         if (!responseData || responseData.length === 0) {
@@ -220,7 +158,7 @@ serve(async (req) => {
               line: prop.Value || 0,
               over_odds: prop.OverPayout ? `${prop.OverPayout > 0 ? '+' : ''}${prop.OverPayout}` : '+100',
               under_odds: prop.UnderPayout ? `${prop.UnderPayout > 0 ? '+' : ''}${prop.UnderPayout}` : '-110',
-              sportsbook: prop.Sportsbook || 'SportsDataIO',
+              sportsbook: prop.Sportsbook || 'Highlightly',
               confidence_score: Math.floor(hitRate),
               value_rating: edge > 2 ? 'high' : edge > -1 ? 'medium' : 'low',
               last_updated: new Date().toISOString()
