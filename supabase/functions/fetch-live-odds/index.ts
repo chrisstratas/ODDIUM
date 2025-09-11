@@ -10,29 +10,85 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const sportsBlazeApiKey = Deno.env.get('SPORTSBLAZE_API_KEY');
 
-// Mock sport configurations
-const SPORT_MAPPINGS = {
-  'nba': { 
-    name: 'NBA',
-    players: ['LeBron James', 'Stephen Curry', 'Luka Doncic', 'Giannis Antetokounmpo']
-  },
-  'nfl': { 
-    name: 'NFL',
-    players: ['Josh Allen', 'Patrick Mahomes', 'Lamar Jackson', 'Dak Prescott']
-  },
-  'mlb': { 
-    name: 'MLB',
-    players: ['Mookie Betts', 'Aaron Judge', 'Ronald Acuna Jr.', 'Mike Trout']
-  },
-  'nhl': { 
-    name: 'NHL',
-    players: ['Connor McDavid', 'Leon Draisaitl', 'Nathan MacKinnon', 'David Pastrnak']
-  },
-  'wnba': { 
-    name: 'WNBA',
-    players: ['A\'ja Wilson', 'Breanna Stewart', 'Diana Taurasi', 'Sabrina Ionescu']
+// Fetch live odds from SPORTSBLAZE API
+const fetchLiveOdds = async () => {
+  if (!sportsBlazeApiKey) {
+    console.log('No SPORTSBLAZE API key found, skipping live odds fetch');
+    return [];
   }
+
+  const sports = ['nba', 'nfl', 'mlb', 'nhl', 'wnba'];
+  const allOdds = [];
+
+  for (const sport of sports) {
+    try {
+      console.log(`Fetching live odds for ${sport.toUpperCase()}...`);
+      
+      const response = await fetch(`https://api.sportsblaze.io/v1/${sport}/odds/player-props`, {
+        headers: {
+          'Authorization': `Bearer ${sportsBlazeApiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Received ${data.length || 0} live odds for ${sport.toUpperCase()}`);
+        
+        for (const prop of data || []) {
+          allOdds.push({
+            player_name: prop.player_name || prop.player,
+            team: prop.team || prop.team_abbreviation,
+            stat_type: mapStatType(prop.stat_type || prop.market),
+            sport: sport.toUpperCase(),
+            line: prop.line || prop.over_under_line || 0,
+            over_odds: prop.over_odds || prop.over_price || '+100',
+            under_odds: prop.under_odds || prop.under_price || '-110',
+            sportsbook: prop.sportsbook || 'SPORTSBLAZE',
+            confidence_score: prop.confidence || Math.floor(Math.random() * 35 + 60),
+            value_rating: prop.value_rating || getValueRating(prop.over_odds || '+100'),
+            last_updated: new Date().toISOString()
+          });
+        }
+      } else {
+        console.error(`SPORTSBLAZE ${sport} odds fetch failed:`, response.status, await response.text());
+      }
+    } catch (error) {
+      console.error(`Error fetching ${sport} odds:`, error);
+    }
+  }
+
+  return allOdds;
+};
+
+const mapStatType = (statType: string): string => {
+  const mappings: Record<string, string> = {
+    'points': 'Points',
+    'rebounds': 'Rebounds',
+    'assists': 'Assists',
+    'three_pointers': '3-Point FG',
+    'threes': '3-Point FG',
+    'passing_yards': 'Passing Yards',
+    'rushing_yards': 'Rushing Yards',
+    'receiving_yards': 'Receiving Yards',
+    'receptions': 'Receptions',
+    'hits': 'Hits',
+    'runs': 'Runs',
+    'rbis': 'RBIs',
+    'goals': 'Goals',
+    'shots_on_goal': 'Shots on Goal'
+  };
+  
+  return mappings[statType.toLowerCase()] || 'Points';
+};
+
+const getValueRating = (odds: string): string => {
+  const numericOdds = parseInt(odds.replace(/[+\-]/, ''));
+  if (numericOdds > 150) return 'high';
+  if (numericOdds > 100) return 'medium';
+  return 'low';
 };
 
 serve(async (req) => {
@@ -41,69 +97,49 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting mock live odds generation...');
+    console.log('Starting live odds fetch from SPORTSBLAZE...');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const liveOdds = await fetchLiveOdds();
+
+    if (liveOdds.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'No live odds data available'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const results = [];
 
-    // Generate mock odds data for each sport
-    for (const [sport, config] of Object.entries(SPORT_MAPPINGS)) {
-      try {
-        console.log(`Generating mock ${config.name} odds...`);
+    // Insert live odds data
+    for (const oddsData of liveOdds) {
+      const { data: oddsInsert, error: oddsError } = await supabase
+        .from('live_odds')
+        .upsert(oddsData, {
+          onConflict: 'player_name,stat_type,sportsbook'
+        });
 
-        // Generate mock props for each player
-        for (const playerName of config.players) {
-          const mockProps = [
-            {
-              player_name: playerName,
-              team: getRandomTeam(config.name),
-              stat_type: getRandomStatType(config.name),
-              sport: config.name,
-              line: Math.round((Math.random() * 30 + 15) * 10) / 10,
-              over_odds: getRandomOdds(),
-              under_odds: getRandomOdds(),
-              sportsbook: getRandomSportsbook(),
-              confidence_score: Math.floor(Math.random() * 35 + 60),
-              value_rating: getRandomValueRating(),
-              last_updated: new Date().toISOString()
-            }
-          ];
-
-          // Insert mock odds data
-          for (const propData of mockProps) {
-            const { data: oddsInsert, error: oddsError } = await supabase
-              .from('live_odds')
-              .upsert(propData, {
-                onConflict: 'player_name,stat_type,sportsbook'
-              });
-
-            if (oddsError) {
-              console.error('Odds insertion error:', oddsError);
-              continue;
-            }
-
-            results.push(propData);
-          }
-        }
-
-      } catch (error) {
-        console.error(`Error processing ${config.name}:`, error);
+      if (oddsError) {
+        console.error('Odds insertion error:', oddsError);
+        continue;
       }
+
+      results.push(oddsData);
     }
 
-    console.log(`Generated mock odds for ${results.length} total props across all sports`);
+    console.log(`Updated ${results.length} live odds from SPORTSBLAZE`);
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Generated mock live odds for ${results.length} props`,
-      data: results.slice(0, 10), // Sample of data
+      message: `Updated ${results.length} live odds`,
+      data: results.slice(0, 10),
       total: results.length,
       breakdown: results.reduce((acc, curr) => {
         acc[curr.sport] = (acc[curr.sport] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>),
-      sportsbooks: [...new Set(results.map(r => r.sportsbook))]
+      }, {} as Record<string, number>)
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -111,7 +147,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in fetch-live-odds:', error);
     return new Response(JSON.stringify({ 
-      error: 'Failed to generate mock odds',
+      error: 'Failed to fetch live odds',
       details: error.message 
     }), {
       status: 500,
@@ -119,44 +155,3 @@ serve(async (req) => {
     });
   }
 });
-
-function getRandomTeam(sport: string): string {
-  const teams = {
-    'NBA': ['LAL', 'GSW', 'DAL', 'MIL', 'BOS', 'MIA'],
-    'NFL': ['BUF', 'KC', 'BAL', 'DAL', 'SF', 'PHI'],
-    'MLB': ['LAD', 'NYY', 'ATL', 'LAA', 'HOU', 'TB'],
-    'NHL': ['EDM', 'COL', 'BOS', 'TOR', 'FLA', 'CAR'],
-    'WNBA': ['LV', 'NY', 'PHX', 'SEA', 'CHI', 'LAS']
-  };
-  
-  const sportTeams = teams[sport as keyof typeof teams] || ['TEAM'];
-  return sportTeams[Math.floor(Math.random() * sportTeams.length)];
-}
-
-function getRandomStatType(sport: string): string {
-  const statTypes = {
-    'NBA': ['Points', 'Rebounds', 'Assists', '3-Point FG', 'Steals'],
-    'NFL': ['Passing Yards', 'Rushing Yards', 'Receptions', 'Passing TDs', 'Rushing TDs'],
-    'MLB': ['Hits', 'Total Bases', 'Runs', 'RBIs', 'Strikeouts'],
-    'NHL': ['Goals', 'Assists', 'Points', 'Shots on Goal'],
-    'WNBA': ['Points', 'Rebounds', 'Assists', '3-Point FG', 'Steals']
-  };
-  
-  const sportStats = statTypes[sport as keyof typeof statTypes] || ['Points'];
-  return sportStats[Math.floor(Math.random() * sportStats.length)];
-}
-
-function getRandomOdds(): string {
-  const odds = Math.floor(Math.random() * 300 - 150);
-  return odds > 0 ? `+${odds}` : `${odds}`;
-}
-
-function getRandomSportsbook(): string {
-  const sportsbooks = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet'];
-  return sportsbooks[Math.floor(Math.random() * sportsbooks.length)];
-}
-
-function getRandomValueRating(): string {
-  const ratings = ['high', 'medium', 'low'];
-  return ratings[Math.floor(Math.random() * ratings.length)];
-}

@@ -10,73 +10,67 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
+const sportsBlazeApiKey = Deno.env.get('SPORTSBLAZE_API_KEY');
 
-// Fetch from FanDuel API
-const fetchFromFanDuel = async (sport: string) => {
+// Fetch from SPORTSBLAZE API
+const fetchFromSportsBlaze = async (sport: string) => {
   try {
-    console.log(`Fetching ${sport} odds from FanDuel...`);
+    console.log(`Fetching ${sport} odds from SPORTSBLAZE...`);
     
-    // FanDuel API endpoints for different sports
+    if (!sportsBlazeApiKey) {
+      console.log('No SPORTSBLAZE API key found, skipping live odds fetch');
+      return [];
+    }
+    
+    // SPORTSBLAZE API endpoints for different sports
     const endpoints = {
-      'NBA': 'basketball_nba',
-      'NFL': 'americanfootball_nfl', 
-      'MLB': 'baseball_mlb',
-      'NHL': 'icehockey_nhl'
+      'NBA': 'nba',
+      'NFL': 'nfl', 
+      'MLB': 'mlb',
+      'NHL': 'nhl',
+      'WNBA': 'wnba'
     };
     
     const sportKey = endpoints[sport as keyof typeof endpoints];
     if (!sportKey) {
-      console.log(`No FanDuel endpoint found for ${sport}, using mock data`);
-      return createMockPropData(sport);
+      console.log(`No SPORTSBLAZE endpoint found for ${sport}`);
+      return [];
     }
     
-    // Use The Odds API to get FanDuel odds
-    const oddsApiKey = Deno.env.get('ODDS_API_KEY') || 'demo'; // You'll need to add this secret
-    const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${oddsApiKey}&regions=us&markets=player_props&bookmakers=fanduel`, {
+    const response = await fetch(`https://api.sportsblaze.io/v1/${sportKey}/odds/player-props`, {
       headers: { 
+        'Authorization': `Bearer ${sportsBlazeApiKey}`,
         'Content-Type': 'application/json'
       }
     });
     
     if (response.ok) {
       const data = await response.json();
-      console.log(`Received ${data.length || 0} games with FanDuel odds for ${sport}`);
+      console.log(`Received ${data.length || 0} player props for ${sport}`);
       
-      // Transform FanDuel data to our format
+      // Transform SPORTSBLAZE data to our format
       const transformedData = [];
       
-      for (const game of data || []) {
-        const markets = game.bookmakers?.[0]?.markets || [];
-        
-        for (const market of markets) {
-          if (market.key.includes('player_')) {
-            for (const outcome of market.outcomes || []) {
-              const player = extractPlayerName(outcome.description);
-              const statType = mapFanDuelMarketToStatType(market.key, sport);
-              
-              transformedData.push({
-                PlayerName: player,
-                Team: getTeamFromGame(game, player),
-                StatType: statType,
-                Value: outcome.point || Math.random() * 30 + 15,
-                OverOdds: outcome.name === 'Over' ? outcome.price : findCorrespondingOdds(market.outcomes, 'Over'),
-                UnderOdds: outcome.name === 'Under' ? outcome.price : findCorrespondingOdds(market.outcomes, 'Under'),
-                Confidence: calculateConfidence(outcome.price)
-              });
-            }
-          }
-        }
+      for (const prop of data || []) {
+        transformedData.push({
+          PlayerName: prop.player_name || prop.player,
+          Team: prop.team || prop.team_abbreviation,
+          StatType: mapStatType(prop.stat_type || prop.market),
+          Value: prop.line || prop.over_under_line,
+          OverOdds: prop.over_odds || prop.over_price || '+100',
+          UnderOdds: prop.under_odds || prop.under_price || '-110',
+          Confidence: calculateConfidence(prop.over_odds || '+100')
+        });
       }
       
-      return transformedData.length > 0 ? transformedData : createMockPropData(sport);
+      return transformedData;
     } else {
-      console.error(`FanDuel ${sport} fetch failed:`, response.status, await response.text());
-      return createMockPropData(sport);
+      console.error(`SPORTSBLAZE ${sport} fetch failed:`, response.status, await response.text());
+      return [];
     }
   } catch (error) {
-    console.error(`FanDuel ${sport} error:`, error);
-    return createMockPropData(sport);
+    console.error(`SPORTSBLAZE ${sport} error:`, error);
+    return [];
   }
 };
 
@@ -87,24 +81,25 @@ const extractPlayerName = (description: string): string => {
   return match ? match[1].trim() : 'Unknown Player';
 };
 
-const mapFanDuelMarketToStatType = (marketKey: string, sport: string): string => {
+const mapStatType = (statType: string): string => {
   const mappings: Record<string, string> = {
-    'player_points': 'Points',
-    'player_rebounds': 'Rebounds',
-    'player_assists': 'Assists',
-    'player_threes': '3-Pointers Made',
-    'player_passing_yards': 'Passing Yards',
-    'player_rushing_yards': 'Rushing Yards',
-    'player_receiving_yards': 'Receiving Yards',
-    'player_receptions': 'Receptions',
-    'player_hits': 'Hits',
-    'player_runs': 'Runs',
-    'player_rbis': 'RBIs',
-    'player_goals': 'Goals',
-    'player_shots_on_goal': 'Shots on Goal'
+    'points': 'Points',
+    'rebounds': 'Rebounds', 
+    'assists': 'Assists',
+    'three_pointers': '3-Pointers Made',
+    'threes': '3-Pointers Made',
+    'passing_yards': 'Passing Yards',
+    'rushing_yards': 'Rushing Yards', 
+    'receiving_yards': 'Receiving Yards',
+    'receptions': 'Receptions',
+    'hits': 'Hits',
+    'runs': 'Runs',
+    'rbis': 'RBIs',
+    'goals': 'Goals',
+    'shots_on_goal': 'Shots on Goal'
   };
   
-  return mappings[marketKey] || 'Points';
+  return mappings[statType.toLowerCase()] || 'Points';
 };
 
 const getTeamFromGame = (game: any, playerName: string): string => {
@@ -124,34 +119,6 @@ const calculateConfidence = (odds: string | number): number => {
   return Math.floor(impliedProb * 100);
 };
 
-// Fallback mock data function
-const createMockPropData = (sport: string) => {
-  const mockPlayers = {
-    'NBA': [
-      { PlayerName: 'LeBron James', Team: 'LAL', StatType: 'Points', Value: 25.5, OverOdds: '+100', UnderOdds: '-120', Confidence: 75 },
-      { PlayerName: 'Stephen Curry', Team: 'GSW', StatType: 'Points', Value: 27.2, OverOdds: '-110', UnderOdds: '-110', Confidence: 80 },
-      { PlayerName: 'Luka Doncic', Team: 'DAL', StatType: 'Points', Value: 28.1, OverOdds: '+105', UnderOdds: '-125', Confidence: 78 }
-    ],
-    'NFL': [
-      { PlayerName: 'Josh Allen', Team: 'BUF', StatType: 'Passing Yards', Value: 285.5, OverOdds: '+100', UnderOdds: '-120', Confidence: 72 },
-      { PlayerName: 'Patrick Mahomes', Team: 'KC', StatType: 'Passing Yards', Value: 295.5, OverOdds: '-105', UnderOdds: '-115', Confidence: 85 }
-    ],
-    'MLB': [
-      { PlayerName: 'Mookie Betts', Team: 'LAD', StatType: 'Hits', Value: 1.5, OverOdds: '+110', UnderOdds: '-130', Confidence: 70 },
-      { PlayerName: 'Aaron Judge', Team: 'NYY', StatType: 'Hits', Value: 1.5, OverOdds: '+100', UnderOdds: '-120', Confidence: 73 }
-    ],
-    'NHL': [
-      { PlayerName: 'Connor McDavid', Team: 'EDM', StatType: 'Points', Value: 1.5, OverOdds: '+120', UnderOdds: '-140', Confidence: 77 },
-      { PlayerName: 'Leon Draisaitl', Team: 'EDM', StatType: 'Points', Value: 1.5, OverOdds: '+105', UnderOdds: '-125', Confidence: 74 }
-    ],
-    'WNBA': [
-      { PlayerName: "A'ja Wilson", Team: 'LV', StatType: 'Points', Value: 24.5, OverOdds: '+105', UnderOdds: '-125', Confidence: 82 },
-      { PlayerName: 'Breanna Stewart', Team: 'NY', StatType: 'Points', Value: 22.5, OverOdds: '+100', UnderOdds: '-120', Confidence: 79 }
-    ]
-  };
-  
-  return mockPlayers[sport as keyof typeof mockPlayers] || [];
-};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -176,8 +143,13 @@ serve(async (req) => {
 
     for (const sport of sports) {
       try {
-        // Fetch from FanDuel API
-        let responseData = await fetchFromFanDuel(sport.name);
+        // Fetch from SPORTSBLAZE API
+        let responseData = await fetchFromSportsBlaze(sport.name);
+
+        if (responseData.length === 0) {
+          console.log(`No live data available for ${sport.name}, skipping`);
+          continue;
+        }
 
         console.log(`Processing ${responseData.length} ${sport.name} records`);
 
