@@ -6,6 +6,8 @@ import { TrendingUp, TrendingDown, Star, AlertTriangle, User, Target, Brain, Act
 import PlayerModal from "./PlayerModal";
 import { usePlayerMatchups } from "@/hooks/usePlayerMatchups";
 import { usePlayerInsights } from "@/hooks/usePlayerInsights";
+import { useExternalFactors } from "@/hooks/useExternalFactors";
+import ExternalFactorsCard from "./ExternalFactorsCard";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerPropCardProps {
@@ -110,6 +112,20 @@ const PlayerPropCard = ({
 
   // Get AI-powered insights for this player prop
   const { insights: playerInsights, loading: insightsLoading } = usePlayerInsights({
+    playerName: player,
+    team,
+    stat,
+    sport: getSport(),
+    line
+  });
+
+  // Get external factors analysis
+  const { 
+    factors: externalFactors, 
+    streakAnalysis, 
+    milestones, 
+    loading: factorsLoading 
+  } = useExternalFactors({
     playerName: player,
     team,
     stat,
@@ -273,6 +289,17 @@ const PlayerPropCard = ({
               <div className="text-xs text-muted-foreground mt-2">Analyzing matchup data...</div>
             </div>
             )}
+
+          {/* External Factors Section */}
+          <div className="mb-4">
+            <ExternalFactorsCard
+              factors={externalFactors}
+              streakAnalysis={streakAnalysis}
+              milestones={milestones}
+              loading={factorsLoading}
+              playerName={player}
+            />
+          </div>
 
           {/* AI Insights Section */}
           <div className="mb-4">

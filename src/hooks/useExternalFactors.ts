@@ -373,7 +373,7 @@ export const useExternalFactors = ({
 
   const generateAIInsights = async (recentStats: any[], currentFactors: ExternalFactor[]) => {
     try {
-      const { data, error } = await supabase.functions.invoke('sports-insights-ai', {
+      const { data, error } = await supabase.functions.invoke('external-factors-ai', {
         body: {
           sport,
           playerName,

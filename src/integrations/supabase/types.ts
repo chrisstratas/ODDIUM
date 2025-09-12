@@ -44,6 +44,66 @@ export type Database = {
         }
         Relationships: []
       }
+      external_factors: {
+        Row: {
+          ai_generated: boolean | null
+          confidence: number
+          created_at: string
+          description: string
+          expires_at: string | null
+          factor_type: string
+          game_date: string | null
+          id: string
+          impact: string
+          metadata: Json | null
+          player_name: string
+          priority: string
+          source: string
+          sport: string
+          team: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          confidence: number
+          created_at?: string
+          description: string
+          expires_at?: string | null
+          factor_type: string
+          game_date?: string | null
+          id?: string
+          impact: string
+          metadata?: Json | null
+          player_name: string
+          priority: string
+          source: string
+          sport: string
+          team: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          confidence?: number
+          created_at?: string
+          description?: string
+          expires_at?: string | null
+          factor_type?: string
+          game_date?: string | null
+          id?: string
+          impact?: string
+          metadata?: Json | null
+          player_name?: string
+          priority?: string
+          source?: string
+          sport?: string
+          team?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       games_schedule: {
         Row: {
           away_record: string | null
@@ -288,6 +348,63 @@ export type Database = {
           season_year?: number
           sport?: string
           stat_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      player_milestones: {
+        Row: {
+          achieved: boolean | null
+          achieved_date: string | null
+          created_at: string
+          current_value: number
+          description: string
+          games_remaining: number | null
+          id: string
+          likelihood: number | null
+          milestone_type: string
+          player_name: string
+          season_year: number | null
+          sport: string
+          stat_type: string
+          target_value: number
+          team: string
+          updated_at: string
+        }
+        Insert: {
+          achieved?: boolean | null
+          achieved_date?: string | null
+          created_at?: string
+          current_value: number
+          description: string
+          games_remaining?: number | null
+          id?: string
+          likelihood?: number | null
+          milestone_type: string
+          player_name: string
+          season_year?: number | null
+          sport: string
+          stat_type: string
+          target_value: number
+          team: string
+          updated_at?: string
+        }
+        Update: {
+          achieved?: boolean | null
+          achieved_date?: string | null
+          created_at?: string
+          current_value?: number
+          description?: string
+          games_remaining?: number | null
+          id?: string
+          likelihood?: number | null
+          milestone_type?: string
+          player_name?: string
+          season_year?: number | null
+          sport?: string
+          stat_type?: string
+          target_value?: number
+          team?: string
           updated_at?: string
         }
         Relationships: []
