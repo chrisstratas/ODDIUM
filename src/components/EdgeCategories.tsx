@@ -34,15 +34,15 @@ const edgeCategories: EdgeCategory[] = [
   {
     id: 'player_props',
     title: 'Player Props',
-    subtitle: 'Especially niche ones',
-    description: 'Sportsbooks lack depth of data and liquidity in props compared to spreads/totals.',
+    subtitle: 'Hidden gems in player betting',
+    description: 'Sportsbooks focus on main games, leaving player prop lines less refined - your opportunity to find value.',
     icon: <Target className="w-6 h-6" />,
-    whyItWorks: 'Books can\'t devote the same resources to every prop. Advanced stat tracking (targets, snap counts, usage rates) reveals mispriced lines.',
+    whyItWorks: 'While books perfect their main game lines, they can\'t analyze every player prop with the same detail. You can use deeper stats to spot when lines don\'t match reality.',
     examples: [
-      'NFL backup RB receiving yards',
-      'NBA bench player rebounds',
-      'Backup QB passing attempts',
-      'Role player 3-pointers made'
+      'Backup running back receiving yards',
+      'Bench player rebounds in blowouts',
+      'Third-string QB attempts in garbage time',
+      'Role player three-pointers vs weak defense'
     ],
     difficulty: 'Intermediate',
     profitPotential: 'High',
@@ -51,16 +51,16 @@ const edgeCategories: EdgeCategory[] = [
   },
   {
     id: 'live_betting',
-    title: 'Live/In-Play Betting',
-    subtitle: 'Fast-moving opportunities',
-    description: 'Lines update quickly based on automated models. Sharp eyes can beat sluggish adjustments.',
+    title: 'Live Betting',
+    subtitle: 'React faster than the robots',
+    description: 'Game situations change instantly, but sportsbook computers take time to catch up - giving you a window.',
     icon: <Zap className="w-6 h-6" />,
-    whyItWorks: 'Automated models can\'t instantly process all game context. Bettors with faster data or sharp observation can spot mispriced live lines.',
+    whyItWorks: 'You\'re watching the game with human intuition while books rely on automated systems. When something big happens, you can often bet before their algorithms fully adjust.',
     examples: [
-      'QB injury before line adjusts',
-      'Weather changes mid-game',
-      'Key player fouls out',
-      'Momentum shifts books miss'
+      'Star player gets injured on the field',
+      'Weather suddenly changes the game plan',
+      'Key player picks up early fouls',
+      'Team momentum that computers miss'
     ],
     difficulty: 'Advanced',
     profitPotential: 'High',
@@ -70,15 +70,15 @@ const edgeCategories: EdgeCategory[] = [
   {
     id: 'college_sports',
     title: 'College Sports',
-    subtitle: 'Smaller conferences',
-    description: 'Books can\'t perfect lines for every conference. Less attention = more opportunity.',
+    subtitle: 'Where the spotlight doesn\'t shine',
+    description: 'Sportsbooks put their best analysts on primetime games, leaving smaller college games with softer lines.',
     icon: <GraduationCap className="w-6 h-6" />,
-    whyItWorks: 'Resources focused on major games. Sun Belt basketball gets less attention than NFL Sunday Night Football.',
+    whyItWorks: 'Every oddsmaker focuses on the big games everyone\'s watching. Meanwhile, that Tuesday night MAC basketball game? Much less scrutinized, much more opportunity.',
     examples: [
-      'Mid-major basketball totals',
-      'FCS football spreads',
-      'Conference tournament games',
-      'Weekday college games'
+      'Mid-major conference basketball games',
+      'Division II football matchups',
+      'Early-round conference tournaments',
+      'Weekday afternoon college games'
     ],
     difficulty: 'Intermediate',
     profitPotential: 'Medium',
@@ -87,16 +87,16 @@ const edgeCategories: EdgeCategory[] = [
   },
   {
     id: 'arbitrage',
-    title: 'Arbitrage & Line Shopping',
-    subtitle: 'Cross-book opportunities',
-    description: 'Different books disagree on odds. Lock in profits by betting both sides.',
+    title: 'Line Shopping',
+    subtitle: 'Make sportsbooks compete for you',
+    description: 'Different sportsbooks often disagree on the same game - find the best price or even guarantee profits.',
     icon: <ArrowLeftRight className="w-6 h-6" />,
-    whyItWorks: 'Books use different models and have different customer bases. Price discrepancies create guaranteed profit opportunities.',
+    whyItWorks: 'Each sportsbook has different customers and uses different models. When they disagree enough, you can sometimes bet both sides and win either way.',
     examples: [
-      'Eagles -3 vs Cowboys +3.5',
-      'Over 45.5 vs Under 46.5',
-      'Different prop lines',
-      'Promotional boosts arbitrage'
+      'Eagles -3 at one book, Cowboys +3.5 at another',
+      'Over 45.5 vs Under 46.5 on the same game',
+      'Player props with different numbers',
+      'Bonus bets creating arbitrage chances'
     ],
     difficulty: 'Beginner',
     profitPotential: 'Low',
@@ -105,16 +105,16 @@ const edgeCategories: EdgeCategory[] = [
   },
   {
     id: 'derivative_markets',
-    title: 'Derivative Markets',
-    subtitle: 'First-half, team totals, periods',
-    description: 'Books often set these by formula, missing game-specific nuances.',
+    title: 'Alternative Markets',
+    subtitle: 'When sportsbooks use shortcuts',
+    description: 'Books often create these lines using simple formulas instead of deep analysis - your chance to outsmart the math.',
     icon: <Split className="w-6 h-6" />,
-    whyItWorks: 'Automatic splitting of main lines misses context like fast first halves in NBA or strong third quarters.',
+    whyItWorks: 'Instead of analyzing each market separately, books often just split main game lines in half. But some teams play differently in first halves, or certain periods.',
     examples: [
-      'First-half totals',
-      'Team-specific totals',
-      'Period betting (hockey)',
-      'Quarter props (basketball)'
+      'First-half totals (some teams start fast)',
+      'Individual team totals (strength vs weakness)',
+      'Hockey period betting (teams with strong thirds)',
+      'Basketball quarter props (bench depth matters)'
     ],
     difficulty: 'Intermediate',
     profitPotential: 'Medium',
@@ -157,10 +157,10 @@ const EdgeCategories: React.FC<EdgeCategoriesProps> = ({
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-foreground mb-2">
-          Where Bettors Beat the House
+          5 Ways Smart Bettors Find Their Edge
         </h2>
         <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-          Focus your edge-hunting on these five proven categories where sharp bettors consistently find value against sportsbooks.
+          Sportsbooks aren't perfect everywhere. Here's where experienced bettors consistently find opportunities to beat the odds.
         </p>
       </div>
 
@@ -275,16 +275,16 @@ const EdgeCategories: React.FC<EdgeCategoriesProps> = ({
           <div className="flex items-center justify-center gap-2 mb-3">
             <TrendingUp className="w-6 h-6 text-primary" />
             <h3 className="text-xl font-semibold text-foreground">
-              Start Your Edge Hunt
+              Ready to Find Your Opportunities?
             </h3>
           </div>
           <p className="text-muted-foreground mb-4 max-w-2xl mx-auto">
-            Our analytics focus on these proven edge categories. Each prop is analyzed for niche opportunities, 
-            live betting potential, and cross-book value.
+            Our analytics scan these exact categories every day, looking for the mispriced lines and overlooked opportunities 
+            that give you the best chance to profit.
           </p>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Info className="w-4 h-4" />
-            <span>Updated daily with fresh opportunities in all five categories</span>
+            <span>Fresh opportunities added daily across all categories</span>
           </div>
         </CardContent>
       </Card>
