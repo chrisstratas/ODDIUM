@@ -9,15 +9,20 @@ import { useEdgeOpportunities } from "@/hooks/useEdgeOpportunities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Target, TrendingUp, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Target, TrendingUp, Zap, RefreshCw, Database } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Index = () => {
   const [selectedSport, setSelectedSport] = useState("NFL");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [isPopulatingData, setIsPopulatingData] = useState(false);
   
   const { 
     opportunities, 
-    loading: opportunitiesLoading 
+    loading: opportunitiesLoading,
+    refetch: refetchOpportunities
   } = useEdgeOpportunities({
     category: selectedCategory || undefined,
     sport: selectedSport,
@@ -25,19 +30,77 @@ const Index = () => {
     minConfidence: 70
   });
 
+  const populateLiveData = async () => {
+    setIsPopulatingData(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('populate-live-data');
+      
+      if (error) {
+        console.error('Error populating live data:', error);
+        toast.error('Failed to populate live data');
+        return;
+      }
+
+      toast.success('Live data populated successfully! Refreshing opportunities...');
+      
+      // Refresh opportunities after populating data
+      setTimeout(() => {
+        refetchOpportunities();
+      }, 1000);
+      
+    } catch (err) {
+      console.error('Error:', err);
+      toast.error('Failed to populate live data');
+    } finally {
+      setIsPopulatingData(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-main">
       <Header />
       <main className="container mx-auto px-4 py-6 space-y-8">
         {/* Hero Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Beat the House at Their Own Game
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Find value in the five proven categories where sharp bettors consistently profit: 
-            niche props, live betting, college sports, arbitrage, and derivative markets.
-          </p>
+        <div className="text-center mb-8 space-y-6">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Beat the House at Their Own Game
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Find value in the five proven categories where sharp bettors consistently profit: 
+              niche props, live betting, college sports, arbitrage, and derivative markets.
+            </p>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <Button 
+              onClick={populateLiveData}
+              disabled={isPopulatingData}
+              size="lg"
+              className="bg-primary hover:bg-primary/90"
+            >
+              {isPopulatingData ? (
+                <>
+                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                  Populating Data...
+                </>
+              ) : (
+                <>
+                  <Database className="w-5 h-5 mr-2" />
+                  Load Live Data
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={refetchOpportunities}
+              variant="outline"
+              size="lg"
+            >
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Refresh Opportunities
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="opportunities" className="w-full">

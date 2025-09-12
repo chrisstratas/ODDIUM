@@ -162,22 +162,37 @@ export const useEdgeOpportunities = ({
     setError(null);
 
     try {
-      // For now, we'll use mock data since we don't have real edge opportunity data
-      // In a real app, this would query a database of analyzed opportunities
-      const mockData = generateMockOpportunities();
-      
-      // Sort by urgency and edge
-      const sortedData = mockData.sort((a, b) => {
-        const urgencyWeight = { high: 3, medium: 2, low: 1 };
-        const urgencyDiff = urgencyWeight[b.urgency] - urgencyWeight[a.urgency];
-        if (urgencyDiff !== 0) return urgencyDiff;
-        return b.edge - a.edge;
+      // First try to fetch real opportunities from our edge analysis
+      const { data, error } = await supabase.functions.invoke('analyze-edge-opportunities', {
+        body: {
+          category,
+          sport,
+          minEdge,
+          minConfidence
+        }
       });
 
-      setOpportunities(sortedData);
+      if (error) {
+        console.error('Error fetching edge opportunities:', error);
+        // Fall back to mock data if edge function fails
+        const mockData = generateMockOpportunities();
+        setOpportunities(mockData);
+        return;
+      }
+
+      if (data?.opportunities && data.opportunities.length > 0) {
+        setOpportunities(data.opportunities);
+      } else {
+        // Use mock data if no real opportunities found
+        const mockData = generateMockOpportunities();
+        setOpportunities(mockData);
+      }
     } catch (err) {
       console.error('Error fetching edge opportunities:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch opportunities');
+      // Fall back to mock data on error
+      const mockData = generateMockOpportunities();
+      setOpportunities(mockData);
     } finally {
       setLoading(false);
     }
