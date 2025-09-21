@@ -8,110 +8,109 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Betting app color scheme */
-    --background: 220 20% 8%;
-    --foreground: 210 40% 98%;
+    /* Futuristic black, white, silver color scheme */
+    --background: 0 0% 3%;
+    --foreground: 0 0% 98%;
 
-    --card: 220 25% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 220 25% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 142 76% 36%;
-    --primary-foreground: 220 20% 8%;
+    --primary: 0 0% 75%;
+    --primary-foreground: 0 0% 8%;
 
-    --secondary: 220 25% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 220 25% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 250 95% 65%;
-    --accent-foreground: 220 20% 8%;
+    --accent: 0 0% 85%;
+    --accent-foreground: 0 0% 8%;
 
-    --destructive: 0 84% 55%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 220 25% 20%;
-    --input: 220 25% 20%;
-    --ring: 142 76% 36%;
+    --border: 0 0% 20%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 75%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Betting specific colors */
-    --success: 142 76% 36%;
-    --success-foreground: 220 20% 8%;
+    /* Futuristic specific colors */
+    --success: 120 60% 50%;
+    --success-foreground: 0 0% 8%;
     
-    --warning: 45 93% 47%;
-    --warning-foreground: 220 20% 8%;
+    --warning: 45 100% 60%;
+    --warning-foreground: 0 0% 8%;
     
-    --negative-odds: 0 84% 55%;
-    --positive-odds: 142 76% 36%;
+    --negative-odds: 0 84% 60%;
+    --positive-odds: 120 60% 50%;
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(250 95% 65%));
-    --gradient-dark: linear-gradient(135deg, hsl(220 25% 12%), hsl(220 20% 8%));
-    --gradient-card: linear-gradient(135deg, hsl(220 25% 12%), hsl(220 25% 15%));
+    /* Futuristic gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 3%), hsl(0 0% 15%));
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 6%), hsl(0 0% 3%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 10%), hsl(0 0% 6%));
+    --gradient-silver: linear-gradient(135deg, hsl(0 0% 70%), hsl(0 0% 85%));
+    --gradient-accent: linear-gradient(90deg, hsl(0 0% 75%), hsl(0 0% 90%));
     
-    /* Shadows */
-    --shadow-glow: 0 0 30px hsl(142 76% 36% / 0.2);
-    --shadow-card: 0 8px 32px hsl(220 20% 5% / 0.4);
+    /* Futuristic shadows and glows */
+    --shadow-glow: 0 0 40px hsl(0 0% 75% / 0.3);
+    --shadow-card: 0 10px 40px hsl(0 0% 0% / 0.5);
+    --shadow-silver: 0 0 20px hsl(0 0% 75% / 0.4);
+    --shadow-inset: inset 0 1px 0 hsl(0 0% 25%);
 
+    /* Sidebar colors */
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 0 0% 8%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 8%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 0 0% 75%;
   }
 
   .dark {
-    /* Light mode for betting app (if ever needed) */
-    --background: 210 40% 98%;
-    --foreground: 220 20% 8%;
+    /* Dark mode variant for futuristic theme */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 8%;
 
-    --card: 210 40% 95%;
-    --card-foreground: 220 20% 8%;
+    --card: 0 0% 95%;
+    --card-foreground: 0 0% 8%;
 
-    --popover: 210 40% 95%;
-    --popover-foreground: 220 20% 8%;
+    --popover: 0 0% 95%;
+    --popover-foreground: 0 0% 8%;
 
-    --primary: 142 76% 36%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 0 0% 25%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 30% 85%;
-    --secondary-foreground: 220 20% 8%;
+    --secondary: 0 0% 90%;
+    --secondary-foreground: 0 0% 8%;
 
-    --muted: 210 30% 90%;
-    --muted-foreground: 220 15% 45%;
+    --muted: 0 0% 85%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 250 95% 65%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84% 55%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 210 30% 85%;
-    --input: 210 30% 85%;
-    --ring: 142 76% 36%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 0 0% 80%;
+    --input: 0 0% 85%;
+    --ring: 0 0% 25%;
+    
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 0% 75%;
+    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 0% 75%;
   }
 }
 
