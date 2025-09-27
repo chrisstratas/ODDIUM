@@ -64,7 +64,7 @@ const Index = () => {
         <div className="text-center mb-8 space-y-6">
           <div>
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Beat the House at Their Own Game
+              ODDIUM
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Find value in the five proven categories where sharp bettors consistently profit: 
