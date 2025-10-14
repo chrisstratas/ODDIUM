@@ -21,5 +21,23 @@ verify_jwt = false
 [functions.fetch-livesport-scores]
 verify_jwt = false
 
-[functions.fetch-api-sports-schedule]
+[functions.external-factors-ai]
+verify_jwt = false
+
+[functions.analyze-edge-opportunities]
+verify_jwt = false
+
+[functions.analyze-parlay-image]
+verify_jwt = false
+
+[functions.sports-insights-ai]
+verify_jwt = false
+
+[functions.populate-live-data]
+verify_jwt = false
+
+[functions.populate-matchups]
+verify_jwt = false
+
+[functions.fetch-thescore-data]
 verify_jwt = false

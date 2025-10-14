@@ -18,7 +18,6 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
 
     // Parse filters from URL or body
     let sortBy = 'value';
@@ -52,23 +51,6 @@ serve(async (req) => {
     } catch (_) {}
 
     console.log('Fetching prop analytics with filters:', { sortBy, category, confidence, sport });
-
-    // First, try to refresh data from Highlightly
-    if (highlightlyApiKey) {
-      try {
-        console.log('Refreshing data from Highlightly...');
-        const refreshResponse = await supabase.functions.invoke('fetch-live-analytics', {
-          body: { refresh: true }
-        });
-        if (refreshResponse.error) {
-          console.warn('Failed to refresh Highlightly data:', refreshResponse.error);
-        } else {
-          console.log('Successfully refreshed Highlightly data');
-        }
-      } catch (error) {
-        console.warn('Error refreshing from Highlightly:', error);
-      }
-    }
 
     // Build query for live odds
     let oddsQuery = supabase

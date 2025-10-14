@@ -10,82 +10,101 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const sportsBlazeApiKey = Deno.env.get('SPORTSBLAZE_API_KEY');
+const oddsApiKey = Deno.env.get('THE_ODDS_API_KEY');
 
-// Fetch live odds from SPORTSBLAZE API
 const fetchLiveOdds = async () => {
-  if (!sportsBlazeApiKey) {
-    console.log('No SPORTSBLAZE API key found, skipping live odds fetch');
+  if (!oddsApiKey) {
+    console.log('No THE_ODDS_API_KEY found, skipping live odds fetch');
     return [];
   }
 
-  const sports = ['nba', 'nfl', 'mlb', 'nhl', 'wnba'];
+  const sportKeys = ['basketball_nba', 'americanfootball_nfl', 'baseball_mlb', 'icehockey_nhl', 'basketball_wnba'];
   const allOdds = [];
 
-  for (const sport of sports) {
+  for (const sportKey of sportKeys) {
     try {
-      console.log(`Fetching live odds for ${sport.toUpperCase()}...`);
+      console.log(`Fetching live odds for ${sportKey}...`);
       
-      const response = await fetch(`https://api.sportsblaze.io/v1/${sport}/odds/player-props`, {
-        headers: {
-          'Authorization': `Bearer ${sportsBlazeApiKey}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${oddsApiKey}&regions=us&markets=player_points,player_rebounds,player_assists,player_threes,h2h&oddsFormat=american`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
         }
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`Received ${data.length || 0} live odds for ${sport.toUpperCase()}`);
+        console.log(`Received ${data.length || 0} games with odds for ${sportKey}`);
         
-        for (const prop of data || []) {
-          allOdds.push({
-            player_name: prop.player_name || prop.player,
-            team: prop.team || prop.team_abbreviation,
-            stat_type: mapStatType(prop.stat_type || prop.market),
-            sport: sport.toUpperCase(),
-            line: prop.line || prop.over_under_line || 0,
-            over_odds: prop.over_odds || prop.over_price || '+100',
-            under_odds: prop.under_odds || prop.under_price || '-110',
-            sportsbook: prop.sportsbook || 'SPORTSBLAZE',
-            confidence_score: prop.confidence || Math.floor(Math.random() * 35 + 60),
-            value_rating: prop.value_rating || getValueRating(prop.over_odds || '+100'),
-            last_updated: new Date().toISOString()
-          });
+        for (const game of data || []) {
+          for (const bookmaker of game.bookmakers || []) {
+            for (const market of bookmaker.markets || []) {
+              if (market.key.startsWith('player_')) {
+                for (const outcome of market.outcomes || []) {
+                  const statType = mapMarketToStat(market.key);
+                  allOdds.push({
+                    player_name: outcome.description || outcome.name,
+                    team: outcome.name === game.home_team ? game.home_team : game.away_team,
+                    stat_type: statType,
+                    sport: mapSportKey(sportKey),
+                    line: outcome.point || 0,
+                    over_odds: outcome.name === 'Over' ? formatOdds(outcome.price) : '+100',
+                    under_odds: outcome.name === 'Under' ? formatOdds(outcome.price) : '-110',
+                    sportsbook: bookmaker.title || 'Unknown',
+                    confidence_score: Math.floor(Math.random() * 35 + 60),
+                    value_rating: getValueRating(outcome.price),
+                    last_updated: new Date().toISOString()
+                  });
+                }
+              }
+            }
+          }
         }
       } else {
-        console.error(`SPORTSBLAZE ${sport} odds fetch failed:`, response.status, await response.text());
+        console.error(`The Odds API ${sportKey} fetch failed:`, response.status, await response.text());
       }
     } catch (error) {
-      console.error(`Error fetching ${sport} odds:`, error);
+      console.error(`Error fetching ${sportKey} odds:`, error);
     }
   }
 
   return allOdds;
 };
 
-const mapStatType = (statType: string): string => {
+const mapMarketToStat = (market: string): string => {
   const mappings: Record<string, string> = {
-    'points': 'Points',
-    'rebounds': 'Rebounds',
-    'assists': 'Assists',
-    'three_pointers': '3-Point FG',
-    'threes': '3-Point FG',
-    'passing_yards': 'Passing Yards',
-    'rushing_yards': 'Rushing Yards',
-    'receiving_yards': 'Receiving Yards',
-    'receptions': 'Receptions',
-    'hits': 'Hits',
-    'runs': 'Runs',
-    'rbis': 'RBIs',
-    'goals': 'Goals',
-    'shots_on_goal': 'Shots on Goal'
+    'player_points': 'Points',
+    'player_rebounds': 'Rebounds',
+    'player_assists': 'Assists',
+    'player_threes': '3-Point FG',
+    'player_pass_tds': 'Passing TDs',
+    'player_pass_yds': 'Passing Yards',
+    'player_rush_yds': 'Rushing Yards',
+    'player_receptions': 'Receptions'
   };
   
-  return mappings[statType.toLowerCase()] || 'Points';
+  return mappings[market] || 'Points';
 };
 
-const getValueRating = (odds: string): string => {
-  const numericOdds = parseInt(odds.replace(/[+\-]/, ''));
+const mapSportKey = (sportKey: string): string => {
+  const mappings: Record<string, string> = {
+    'basketball_nba': 'NBA',
+    'americanfootball_nfl': 'NFL',
+    'baseball_mlb': 'MLB',
+    'icehockey_nhl': 'NHL',
+    'basketball_wnba': 'WNBA'
+  };
+  
+  return mappings[sportKey] || 'NBA';
+};
+
+const formatOdds = (price: number): string => {
+  return price > 0 ? `+${price}` : `${price}`;
+};
+
+const getValueRating = (odds: number): string => {
+  const numericOdds = Math.abs(odds);
   if (numericOdds > 150) return 'high';
   if (numericOdds > 100) return 'medium';
   return 'low';
@@ -97,7 +116,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting live odds fetch from SPORTSBLAZE...');
+    console.log('Starting live odds fetch from The Odds API...');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const liveOdds = await fetchLiveOdds();
@@ -113,7 +132,6 @@ serve(async (req) => {
 
     const results = [];
 
-    // Insert live odds data
     for (const oddsData of liveOdds) {
       const { data: oddsInsert, error: oddsError } = await supabase
         .from('live_odds')
@@ -129,7 +147,7 @@ serve(async (req) => {
       results.push(oddsData);
     }
 
-    console.log(`Updated ${results.length} live odds from SPORTSBLAZE`);
+    console.log(`Updated ${results.length} live odds from The Odds API`);
 
     return new Response(JSON.stringify({
       success: true,

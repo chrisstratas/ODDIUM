@@ -18,16 +18,16 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const highlightlyApiKey = Deno.env.get('HIGHLIGHTLY_API_KEY');
+    const oddsApiKey = Deno.env.get('THE_ODDS_API_KEY');
 
     console.log('Starting prop analytics population...');
 
-    if (!highlightlyApiKey) {
-      console.log('No Highlightly API key found, generating mock analytics data...');
+    if (!oddsApiKey) {
+      console.log('No THE_ODDS_API_KEY found, generating mock analytics data...');
       await generateMockAnalytics(supabase);
     } else {
-      console.log('Using Highlightly API to fetch analytics data...');
-      await fetchHighlightlyAnalytics(supabase, highlightlyApiKey);
+      console.log('Using The Odds API to fetch analytics data...');
+      await fetchOddsApiAnalytics(supabase, oddsApiKey);
     }
 
     return new Response(JSON.stringify({
@@ -49,63 +49,56 @@ serve(async (req) => {
   }
 });
 
-async function fetchHighlightlyAnalytics(supabase: any, apiKey: string) {
+async function fetchOddsApiAnalytics(supabase: any, apiKey: string) {
   const sports = [
-    { name: 'NBA', endpoint: 'basketball/nba/players/props' },
-    { name: 'NFL', endpoint: 'football/nfl/players/props' },
-    { name: 'MLB', endpoint: 'baseball/mlb/players/props' },
-    { name: 'NHL', endpoint: 'hockey/nhl/players/props' }
+    { name: 'NBA', sportKey: 'basketball_nba' },
+    { name: 'NFL', sportKey: 'americanfootball_nfl' },
+    { name: 'MLB', sportKey: 'baseball_mlb' },
+    { name: 'NHL', sportKey: 'icehockey_nhl' }
   ];
   const allAnalytics = [];
 
   for (const sport of sports) {
     try {
-      console.log(`Fetching ${sport.name} props from Highlightly...`);
+      console.log(`Fetching ${sport.name} props from The Odds API...`);
       
-      // Get player props for the sport from Highlightly API
-      const propsResponse = await fetch(`https://api.highlightly.net/v1/${sport.endpoint}`, {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const propsResponse = await fetch(
+        `https://api.the-odds-api.com/v4/sports/${sport.sportKey}/odds/?apiKey=${apiKey}&regions=us&markets=player_points,player_rebounds,player_assists`,
+        { method: 'GET' }
+      );
 
       if (propsResponse.ok) {
-        const propsData = await propsResponse.json();
-        const props = propsData.players || propsData || [];
-        console.log(`Received ${props.length} props for ${sport.name}`);
+        const data = await propsResponse.json();
+        console.log(`Received ${data.length || 0} games for ${sport.name}`);
 
-        for (const prop of props) {
-          const playerName = prop.name || `${prop.firstName || ''} ${prop.lastName || ''}`.trim();
-          const team = prop.team || prop.teamAbbreviation;
-          const statType = mapStatType(prop.statType || prop.prop_type);
-          
-          if (!playerName || !team || !statType) continue;
+        for (const game of data || []) {
+          for (const bookmaker of game.bookmakers || []) {
+            for (const market of bookmaker.markets || []) {
+              for (const outcome of market.outcomes || []) {
+                const analytics = {
+                  player_name: outcome.description || outcome.name,
+                  team: game.home_team,
+                  stat_type: mapMarketToStat(market.key),
+                  sport: sport.name,
+                  season_average: outcome.point || 15 + Math.random() * 15,
+                  recent_form: (outcome.point || 15) + (Math.random() * 10 - 5),
+                  hit_rate: 0.45 + Math.random() * 0.35,
+                  edge_percentage: -10 + Math.random() * 25,
+                  trend_direction: Math.random() > 0.5 ? 'up' : 'down',
+                  calculated_at: new Date().toISOString()
+                };
 
-          // Calculate analytics metrics from Highlightly data
-          const analytics = {
-            player_name: playerName,
-            team: team,
-            stat_type: statType,
-            sport: sport.name,
-            season_average: prop.seasonAverage || prop.value || prop.line || (Math.random() * 30 + 10),
-            recent_form: prop.recentForm || prop.recentAverage || ((prop.value || 20) + (Math.random() - 0.5) * 5),
-            hit_rate: prop.hitRate ? prop.hitRate / 100 : (Math.random() * 0.4 + 0.5),
-            edge_percentage: prop.edge || (Math.random() * 15 + 2),
-            trend_direction: prop.trend || (Math.random() > 0.5 ? 'up' : 'down'),
-            calculated_at: new Date().toISOString()
-          };
-
-          allAnalytics.push(analytics);
+                allAnalytics.push(analytics);
+              }
+            }
+          }
         }
       } else {
         console.warn(`Failed to fetch ${sport.name} props:`, propsResponse.status);
-        // Generate mock data for this sport
         await generateMockAnalyticsForSport(sport.name, allAnalytics);
       }
     } catch (error) {
-      console.warn(`Error fetching ${sport.name} from Highlightly:`, error);
-      // Generate mock data for this sport
+      console.warn(`Error fetching ${sport.name} from The Odds API:`, error);
       await generateMockAnalyticsForSport(sport.name, allAnalytics);
     }
   }
@@ -242,31 +235,15 @@ function getStatTypesForSport(sport: string) {
   return statTypes[sport as keyof typeof statTypes] || [];
 }
 
-function mapStatType(statType: string): string {
+function mapMarketToStat(market: string): string {
   const mappings: Record<string, string> = {
-    'points': 'Points',
-    'rebounds': 'Rebounds', 
-    'assists': 'Assists',
-    'threes': '3-Pointers Made',
-    'steals': 'Steals',
-    'blocks': 'Blocks',
-    'passing_yards': 'Passing Yards',
-    'rushing_yards': 'Rushing Yards',
-    'receiving_yards': 'Receiving Yards',
-    'receptions': 'Receptions',
-    'touchdowns': 'Touchdowns',
-    'completions': 'Completions',
-    'hits': 'Hits',
-    'runs': 'Runs',
-    'rbis': 'RBIs',
-    'home_runs': 'Home Runs',
-    'stolen_bases': 'Stolen Bases',
-    'strikeouts': 'Strikeouts',
-    'goals': 'Goals',
-    'shots_on_goal': 'Shots on Goal',
-    'hits_hockey': 'Hits',
-    'blocked_shots': 'Blocked Shots'
+    'player_points': 'Points',
+    'player_rebounds': 'Rebounds',
+    'player_assists': 'Assists',
+    'player_threes': '3-Pointers Made',
+    'player_pass_yds': 'Passing Yards',
+    'player_rush_yds': 'Rushing Yards',
+    'player_receptions': 'Receptions'
   };
-  
-  return mappings[statType?.toLowerCase()] || statType || 'Points';
+  return mappings[market] || 'Points';
 }
