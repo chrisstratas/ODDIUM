@@ -1,128 +1,168 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, ExternalLink, Share2, Copy } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { X, Trash2, DollarSign } from "lucide-react";
 import { useSGP } from "@/contexts/SGPContext";
+import { useState } from "react";
 
 const ParlayBuilder = () => {
   const { picks, removePick, clearPicks, getEstimatedOdds, getAverageConfidence } = useSGP();
   const isEmpty = picks.length === 0;
   const estimatedOdds = getEstimatedOdds();
   const avgConfidence = getAverageConfidence();
-
-  const sportsbooks = [
-    { name: "DraftKings", logo: "🟢" },
-    { name: "FanDuel", logo: "🔵" },
-    { name: "BetMGM", logo: "🟡" },
-    { name: "Caesars", logo: "🟠" },
-    { name: "PointsBet", logo: "🟣" }
-  ];
+  const [betAmount, setBetAmount] = useState<number>(0);
+  
+  const quickAmounts = [10, 25, 50, 100];
+  
+  const calculatePayout = () => {
+    if (!betAmount || isEmpty) return 0;
+    // Simple calculation - in real app would parse odds properly
+    return (betAmount * 2.5).toFixed(2);
+  };
 
   return (
-    <Card className="bg-gradient-card border-border shadow-card sticky top-24">
-      <CardHeader className="pb-3">
+    <Card className="bg-gradient-glass backdrop-blur-sm border-border/50 sticky top-20">
+      <CardHeader className="pb-3 border-b border-border/30">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">SGP Builder</CardTitle>
+          <CardTitle className="text-base font-bold">Bet Slip</CardTitle>
           {!isEmpty && (
-            <Badge className="bg-positive-odds text-success-foreground">
-              {avgConfidence}% Avg
-            </Badge>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={clearPicks}
+              className="h-7 text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Clear All
+            </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3">
         {isEmpty ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No picks selected</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Click on props to build your parlay
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-muted/20 flex items-center justify-center">
+              <DollarSign className="w-8 h-8 text-muted-foreground/50" />
+            </div>
+            <p className="text-muted-foreground font-medium mb-1">No Bets Selected</p>
+            <p className="text-xs text-muted-foreground">
+              Click odds to add to bet slip
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Parlay Summary */}
-            <div className="bg-secondary rounded-lg p-3 border border-border">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Same Game Parlay</span>
-                <span className="text-sm text-positive-odds font-bold">{estimatedOdds}</span>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {picks.length} picks • Lakers vs Warriors
-              </div>
-            </div>
-
+          <div className="space-y-3">
             {/* Individual Picks */}
-            {picks.map((pick) => (
-              <div key={pick.id} className="border border-border rounded-lg p-3">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-medium text-sm">{pick.player}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {pick.prop} • {pick.selection}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {pick.team} • {pick.sport}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {pick.confidence}%
-                    </Badge>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {picks.map((pick) => (
+                <div 
+                  key={pick.id} 
+                  className="bg-secondary/30 border border-border/30 rounded p-2.5 hover:border-border/50 transition-colors"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{pick.player}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {pick.prop} • {pick.selection}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-bold text-positive-odds">
+                          {pick.odds}
+                        </span>
+                        {pick.confidence && (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1">
+                            {pick.confidence}%
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 hover:bg-destructive/20 hover:text-destructive"
                       onClick={() => removePick(pick.id)}
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Parlay Summary */}
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {picks.length} Leg Parlay
+                </span>
+                {avgConfidence > 0 && (
+                  <Badge className="bg-positive-odds/20 text-positive-odds border-positive-odds/30 text-xs">
+                    {avgConfidence}% Avg
+                  </Badge>
+                )}
+              </div>
+              <div className="text-2xl font-bold text-positive-odds">
+                {estimatedOdds}
+              </div>
+            </div>
+
+            {/* Bet Amount Input */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Bet Amount
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={betAmount || ''}
+                  onChange={(e) => setBetAmount(Number(e.target.value))}
+                  className="pl-9 bg-secondary border-border text-foreground h-11 text-lg font-semibold"
+                />
+              </div>
+              
+              {/* Quick Amount Buttons */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {quickAmounts.map((amount) => (
+                  <Button
+                    key={amount}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBetAmount(amount)}
+                    className="h-8 text-xs bg-secondary/50 hover:bg-primary/10 hover:border-primary/30"
+                  >
+                    ${amount}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Potential Payout */}
+            {betAmount > 0 && (
+              <div className="bg-gradient-accent/10 border border-accent/20 rounded-lg p-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-positive-odds font-semibold">
-                    {pick.odds}
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Potential Payout
+                  </span>
+                  <span className="text-xl font-bold text-foreground">
+                    ${calculatePayout()}
                   </span>
                 </div>
               </div>
-            ))}
-            
-            {/* Export to Sportsbooks */}
-            <div className="border-t border-border pt-4">
-              <h4 className="text-sm font-medium mb-3">Place on Your Sportsbook</h4>
-              
-              <Select>
-                <SelectTrigger className="mb-3 bg-secondary border-border">
-                  <SelectValue placeholder="Choose your sportsbook" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sportsbooks.map((book) => (
-                    <SelectItem key={book.name} value={book.name.toLowerCase()}>
-                      <div className="flex items-center gap-2">
-                        <span>{book.logo}</span>
-                        <span>{book.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            )}
 
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <Button size="sm" variant="outline" className="text-xs">
-                  <Copy className="w-3 h-3 mr-1" />
-                  Copy Picks
-                </Button>
-                <Button size="sm" variant="outline" className="text-xs">
-                  <Share2 className="w-3 h-3 mr-1" />
-                  Share
-                </Button>
-              </div>
+            {/* Place Bet Button */}
+            <Button 
+              className="w-full h-12 bg-gradient-silver text-primary-foreground hover:opacity-90 font-bold text-base shadow-button"
+              disabled={!betAmount || betAmount <= 0}
+            >
+              Place Bet
+            </Button>
 
-              <Button className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open Sportsbook
-              </Button>
-            </div>
+            <p className="text-[10px] text-center text-muted-foreground">
+              Bets are for demonstration purposes only
+            </p>
           </div>
         )}
       </CardContent>

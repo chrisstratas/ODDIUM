@@ -174,9 +174,7 @@ const NBA = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
-      <Header />
-      <SportCategories />
+    <div className="min-h-screen bg-background">{/* SportCategories removed - now in sidebar */}
       
       {/* NBA Hero Section */}
       <section className="relative py-20 px-4 overflow-hidden">
@@ -216,28 +214,10 @@ const NBA = () => {
       </section>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Filters Sidebar */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
-            <div className="space-y-6">
-              <ValueFilters onFiltersChange={setFilters} />
-                <SGPCategoryFilters
-                  sport="NBA"
-                  onCategoryChange={(category) => setSgpFilters(prev => ({ ...prev, category }))}
-                  onSortChange={(sortBy) => setSgpFilters(prev => ({ ...prev, sortBy }))}
-                  onConfidenceChange={(confidence) => setSgpFilters(prev => ({ ...prev, confidence }))}
-                  onSportChange={() => {}} // No-op for individual sport pages
-                  selectedCategory={sgpFilters.category}
-                  selectedSort={sgpFilters.sortBy}
-                  selectedConfidence={sgpFilters.confidence}
-                />
-              <ParlayBuilder />
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3 order-1 lg:order-2">
+      <div className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - Takes 2 columns */}
+          <div className="lg:col-span-2 order-1">
             {/* NBA Daily Schedule */}
             <div className="mb-8">
               <DailySchedule sport="NBA" />
@@ -274,7 +254,7 @@ const NBA = () => {
                   Live NBA analytics unavailable — showing sample props.
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {displayProps.filter(prop => prop.valueRating === "high").map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
                 ))}
@@ -292,7 +272,7 @@ const NBA = () => {
             {/* SGP Builder Props */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-6">🎯 NBA SGP Builder Props</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {(sgpProps.length > 0 ? sgpProps : displayProps).map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
                 ))}
@@ -302,11 +282,18 @@ const NBA = () => {
             {/* All NBA Props */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-6">🏀 All NBA Props</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {displayProps.map((prop, index) => (
                   <PlayerPropCard key={index} {...prop} />
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* Right Sidebar - Bet Slip & Filters */}
+          <div className="lg:col-span-1 order-2">
+            <div className="space-y-4 sticky top-20">
+              <ParlayBuilder />
             </div>
           </div>
         </div>

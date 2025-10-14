@@ -79,12 +79,15 @@ export default {
         'gradient-card': 'var(--gradient-card)',
         'gradient-silver': 'var(--gradient-silver)',
         'gradient-accent': 'var(--gradient-accent)',
+        'gradient-glass': 'var(--gradient-glass)',
       },
       boxShadow: {
         'glow': 'var(--shadow-glow)',
         'card': 'var(--shadow-card)',
         'silver': 'var(--shadow-silver)',
         'inset': 'var(--shadow-inset)',
+        'button': 'var(--shadow-button)',
+        'odds': 'var(--shadow-odds)',
       },
       keyframes: {
         "accordion-down": {
@@ -107,6 +110,14 @@ export default {
           "0%": { transform: "translateX(-100%)", opacity: "0" },
           "100%": { transform: "translateX(0)", opacity: "1" },
         },
+        "odds-flash": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5", transform: "scale(1.05)" },
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "-1000px 0" },
+          "100%": { backgroundPosition: "1000px 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -114,6 +125,8 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "slide-in": "slide-in 0.3s ease-out",
+        "odds-flash": "odds-flash 0.6s ease-out",
+        "shimmer": "shimmer 2s linear infinite",
       },
     },
   },
