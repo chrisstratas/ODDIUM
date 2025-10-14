@@ -40,6 +40,48 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
   const { refreshAll, isRefreshing } = useRefresh();
   const { toast } = useToast();
 
+  const refreshLiveScores = async () => {
+    try {
+      setRefreshing(true);
+      
+      const sportKeyMap: Record<string, string> = {
+        'NBA': 'basketball_nba',
+        'NFL': 'americanfootball_nfl',
+        'MLB': 'baseball_mlb',
+        'NHL': 'icehockey_nhl',
+        'WNBA': 'basketball_wnba',
+        'all': 'basketball_nba'
+      };
+      
+      const sportKey = sportKeyMap[sport] || 'basketball_nba';
+      
+      const { data, error } = await supabase.functions.invoke('fetch-odds-api-scores', {
+        body: { sport: sportKey }
+      });
+      
+      if (error) {
+        console.error('Error refreshing live scores:', error);
+        toast({
+          title: "Live Scores Error",
+          description: "Failed to fetch live scores from The Odds API",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Live Scores Updated",
+        description: `Refreshed ${data.gamesCount} games from The Odds API`,
+      });
+      
+      setTimeout(() => fetchScheduleFromDB(), 500);
+    } catch (err) {
+      console.error('Error refreshing live scores:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const fetchLiveData = async () => {
     try {
       setLoading(true);
@@ -300,6 +342,16 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
                 />
               </PopoverContent>
             </Popover>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshLiveScores}
+              disabled={refreshing || isRefreshing}
+              className="gap-2"
+            >
+              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+              Live Scores
+            </Button>
             <Button
               variant="outline"
               size="sm"

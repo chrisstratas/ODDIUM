@@ -104,6 +104,44 @@ export const useSchedule = (sport: string, selectedDate?: Date) => {
     }
   };
 
+  const refreshLiveScores = async () => {
+    try {
+      console.log('Refreshing live scores from The Odds API...');
+      
+      // Map sport to Odds API sport key
+      const sportKeyMap: Record<string, string> = {
+        'NBA': 'basketball_nba',
+        'NFL': 'americanfootball_nfl',
+        'MLB': 'baseball_mlb',
+        'NHL': 'icehockey_nhl',
+        'WNBA': 'basketball_wnba',
+        'all': 'basketball_nba'
+      };
+      
+      const sportKey = sportKeyMap[sport] || 'basketball_nba';
+      
+      const response = await supabase.functions.invoke('fetch-odds-api-scores', {
+        body: { sport: sportKey }
+      });
+      
+      if (response.error) {
+        console.error('Error refreshing live scores:', response.error);
+        throw response.error;
+      }
+      
+      console.log('Live scores refreshed successfully:', response.data);
+      
+      // Wait a moment for data to be inserted, then refetch
+      setTimeout(() => {
+        fetchSchedule();
+      }, 500);
+      
+    } catch (err) {
+      console.error('Error refreshing live scores:', err);
+      setError(err instanceof Error ? err.message : 'Failed to refresh live scores');
+    }
+  };
+
   useEffect(() => {
     fetchSchedule();
   }, [sport, selectedDate]);
@@ -113,6 +151,7 @@ export const useSchedule = (sport: string, selectedDate?: Date) => {
     loading,
     error,
     refetch: fetchSchedule,
-    refresh: refreshSchedule
+    refresh: refreshSchedule,
+    refreshLiveScores
   };
 };

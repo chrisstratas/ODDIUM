@@ -1,5 +1,8 @@
 project_id = "gmwdwxkfygppiavyysyv"
 
+[functions.fetch-odds-api-scores]
+verify_jwt = false
+
 [functions.fetch-live-analytics]
 verify_jwt = false
 
