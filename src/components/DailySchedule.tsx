@@ -35,7 +35,6 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dataSource, setDataSource] = useState<'live' | 'fallback' | 'api'>('api');
   const { refreshAll, isRefreshing } = useRefresh();
   const { toast } = useToast();
@@ -55,7 +54,7 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
       
       const sportKey = sportKeyMap[sport] || 'basketball_nba';
       
-      const { data, error } = await supabase.functions.invoke('fetch-odds-api-scores', {
+      const { data, error } = await supabase.functions.invoke('fetch-sports-schedule', {
         body: { sport: sportKey }
       });
       
@@ -126,16 +125,23 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
           awayScore: game.away_score
         }));
         
-        // Filter games for the selected date
-        const selectedDateString = selectedDate.toISOString().split('T')[0];
-        const filteredGames = formattedGames.filter(game => game.date === selectedDateString);
+        // Filter games for upcoming week
+        const today = new Date();
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7);
+        
+        const filteredGames = formattedGames.filter(game => {
+          const gameDate = new Date(game.date);
+          return gameDate >= today && gameDate <= nextWeek && 
+                 (game.status === 'scheduled' || game.status === 'live');
+        });
         
         setGames(filteredGames);
         setDataSource('live');
         
         toast({
           title: "Live Data Updated",
-          description: `Successfully fetched ${filteredGames.length} ${sport} games from Highlightly`,
+          description: `Successfully fetched ${filteredGames.length} upcoming ${sport} games`,
         });
         return;
       }
@@ -167,12 +173,21 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
     try {
       setError(null);
       
-      const dateString = selectedDate.toISOString().split('T')[0];
+      // Get current date and end of next week
+      const today = new Date();
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+      
+      const startDate = today.toISOString().split('T')[0];
+      const endDate = nextWeek.toISOString().split('T')[0];
       
       let query = supabase
         .from('games_schedule')
         .select('*')
-        .eq('game_date', dateString)
+        .gte('game_date', startDate)
+        .lte('game_date', endDate)
+        .in('status', ['scheduled', 'live'])
+        .order('game_date', { ascending: true })
         .order('game_time', { ascending: true });
 
       if (sport !== 'all') {
@@ -267,15 +282,11 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [sport, selectedDate]);
+  }, [sport]);
 
   useEffect(() => {
     fetchLiveData();
-  }, [sport, selectedDate]);
-
-  const updateSelectedDate = (date: Date) => {
-    setSelectedDate(date);
-  };
+  }, [sport]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -318,30 +329,6 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
           </CardTitle>
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && updateSelectedDate(date)}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
             <Button
               variant="outline"
               size="sm"
@@ -364,7 +351,7 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
-          Showing games for {format(selectedDate, "EEEE, MMMM d, yyyy")}
+          Upcoming games for the next 7 days
         </div>
       </CardHeader>
       <CardContent>
@@ -382,12 +369,9 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
         ) : games.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">
-              No games scheduled for {format(selectedDate, "EEEE, MMMM d, yyyy")}
+              No upcoming games scheduled for the next 7 days
             </p>
             <div className="flex justify-center gap-2">
-              <Button onClick={() => updateSelectedDate(new Date())} variant="outline" size="sm">
-                Today's Games
-              </Button>
               <Button onClick={refreshAll} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Load Latest

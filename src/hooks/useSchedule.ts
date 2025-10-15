@@ -30,14 +30,21 @@ export const useSchedule = (sport: string, selectedDate?: Date) => {
       setLoading(true);
       setError(null);
 
-      // Use selected date or default to today
-      const targetDate = selectedDate || new Date();
-      const dateString = targetDate.toISOString().split('T')[0];
+      // Get current date and end of next week
+      const today = new Date();
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+      
+      const startDate = today.toISOString().split('T')[0];
+      const endDate = nextWeek.toISOString().split('T')[0];
 
       let query = supabase
         .from('games_schedule')
         .select('*')
-        .eq('game_date', dateString)
+        .gte('game_date', startDate)
+        .lte('game_date', endDate)
+        .in('status', ['scheduled', 'live'])
+        .order('game_date', { ascending: true })
         .order('game_time', { ascending: true });
 
       if (sport !== 'all') {
