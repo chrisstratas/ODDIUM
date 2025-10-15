@@ -54,8 +54,8 @@ const BettingCard = ({
   };
 
   return (
-    <Card className="bg-gradient-glass backdrop-blur-sm border-border/50 hover:border-border transition-all duration-200 hover:shadow-card">
-      <CardContent className="p-4">
+    <Card className="bg-gradient-glass backdrop-blur-sm border-border/50 hover:border-border transition-all duration-300 ease-out hover:shadow-card hover:-translate-y-1 rounded-xl animate-slide-fade-in">
+      <CardContent className="p-5">
         {/* Header */}
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
@@ -84,7 +84,7 @@ const BettingCard = ({
         </div>
 
         {/* Stat Line */}
-        <div className="mb-4 p-3 bg-secondary/50 rounded border border-border/30">
+        <div className="mb-4 p-3 bg-secondary/50 rounded-lg border border-border/30">
           <div className="flex justify-between items-center">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{stat}</p>

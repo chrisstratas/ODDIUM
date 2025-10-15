@@ -38,7 +38,7 @@ const InsightCard = ({ type, title, description, confidence, change }: InsightCa
   };
 
   return (
-    <Card className="bg-gradient-card border-border hover:shadow-glow transition-all duration-300">
+    <Card className="bg-gradient-card border-border hover:shadow-glow transition-all duration-300 ease-out hover:-translate-y-1 rounded-xl animate-slide-fade-in">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className={`${getColor()}`}>
@@ -96,9 +96,11 @@ const BettingInsights = ({ sport = "NBA" }: BettingInsightsProps) => {
         <h2 className="text-2xl font-bold">🎯 Smart Insights</h2>
         <Badge variant="secondary">Live Analysis</Badge>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {insights.map((insight, index) => (
-          <InsightCard key={index} {...insight} />
+          <div key={index} style={{ animationDelay: `${index * 100}ms` }}>
+            <InsightCard {...insight} />
+          </div>
         ))}
       </div>
     </div>

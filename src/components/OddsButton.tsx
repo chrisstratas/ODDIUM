@@ -44,10 +44,11 @@ const OddsButton = ({
         flex flex-col items-center justify-center gap-1
         bg-gradient-glass backdrop-blur-sm
         border border-border/50
-        hover:border-primary/50 hover:shadow-button
-        transition-all duration-200
+        rounded-xl
+        hover:border-primary/50 hover:shadow-button hover:-translate-y-1
+        transition-all duration-300 ease-out
         active:scale-95
-        ${selected ? 'border-primary bg-primary/10 shadow-odds' : ''}
+        ${selected ? 'border-primary bg-primary/10 shadow-odds scale-105' : ''}
         ${flashing ? 'animate-odds-flash' : ''}
         relative overflow-hidden
         group

@@ -395,10 +395,14 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            {games.map((game) => (
-              <Card key={game.id} className="border border-border/50">
-                <CardContent className="p-4">
+          <div className="space-y-6">
+            {games.map((game, index) => (
+              <Card 
+                key={game.id} 
+                className="border border-border/50 rounded-xl hover:shadow-card hover:scale-[1.01] transition-all duration-300 ease-out animate-slide-fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">

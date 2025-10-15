@@ -37,7 +37,10 @@ All colors MUST be HSL.
     --input: 0 0% 16%;
     --ring: 0 0% 78%;
 
-    --radius: 0.25rem;
+    --radius: 0.75rem;
+    
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
 
     /* Sportsbook specific colors */
     --success: 142 71% 45%;
@@ -124,5 +127,20 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Smooth transitions for interactive elements */
+  button, a, input, select, textarea {
+    transition: all 0.2s ease-out;
+  }
+  
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

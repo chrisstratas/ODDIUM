@@ -173,8 +173,8 @@ const PlayerPropCard = ({
 
   return (
     <>
-      <Card className="bg-gradient-card border-border shadow-card hover:shadow-glow transition-all duration-300 hover:scale-[1.02]">
-        <CardContent className="p-4">
+      <Card className="bg-gradient-card border-border shadow-card hover:shadow-glow transition-all duration-300 ease-out hover:scale-[1.02] animate-slide-fade-in rounded-xl">
+        <CardContent className="p-5">
           <div className="flex justify-between items-start mb-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -319,7 +319,7 @@ const PlayerPropCard = ({
             </Button>
             
             {showInsights && (
-              <div className="mt-3 space-y-3">
+              <div className="mt-3 space-y-3 animate-accordion-down">
                 {insightsLoading ? (
                   <div className="p-3 bg-muted/50 rounded-lg border border-border text-center">
                     <Brain className="w-6 h-6 mx-auto mb-2 animate-pulse text-primary" />

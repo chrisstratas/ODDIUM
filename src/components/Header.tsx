@@ -1,9 +1,18 @@
 import { Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 
 const Header = () => {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <header className="border-b border-border bg-gradient-dark backdrop-blur-md sticky top-0 z-50 h-14">
+    <header className={`border-b border-border bg-gradient-dark backdrop-blur-md sticky top-0 z-50 h-14 transition-all duration-300 ${scrolled ? 'shadow-glow' : ''}`}>
       <div className="container mx-auto px-4 h-full">
         <div className="flex items-center justify-between h-full">
           {/* Logo */}

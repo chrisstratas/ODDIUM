@@ -91,8 +91,8 @@ const EdgeOpportunityCard: React.FC<EdgeOpportunityCardProps> = ({
   };
 
   return (
-    <Card className="bg-gradient-card border-border hover:shadow-glow transition-all duration-300">
-      <CardContent className="p-4 space-y-3">
+    <Card className="bg-gradient-card border-border hover:shadow-glow transition-all duration-300 ease-out hover:-translate-y-1 rounded-xl animate-slide-fade-in">
+      <CardContent className="p-5 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex-1">
