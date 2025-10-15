@@ -41,3 +41,15 @@ verify_jwt = false
 
 [functions.fetch-thescore-data]
 verify_jwt = false
+
+[functions.fetch-sportsdata-players]
+verify_jwt = false
+
+[functions.fetch-sportsdata-projections]
+verify_jwt = false
+
+[functions.fetch-sportsdata-stats]
+verify_jwt = false
+
+[functions.populate-all-sports-data]
+verify_jwt = false

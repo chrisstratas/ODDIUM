@@ -109,64 +109,148 @@ export type Database = {
           away_record: string | null
           away_score: number | null
           away_team: string
+          broadcast_network: string | null
+          broadcast_streaming: string | null
           created_at: string
           data_source: string | null
           game_date: string
           game_id: string
+          game_importance: string | null
           game_time: string
           home_record: string | null
           home_score: number | null
           home_team: string
           id: string
+          moneyline_away: number | null
+          moneyline_home: number | null
           network: string | null
           season_year: number
           sport: string
+          spread: number | null
           status: string
+          total_line: number | null
           updated_at: string
           venue: string | null
+          venue_capacity: number | null
+          venue_location: string | null
+          weather_condition: string | null
+          weather_temp: number | null
           week_number: number | null
         }
         Insert: {
           away_record?: string | null
           away_score?: number | null
           away_team: string
+          broadcast_network?: string | null
+          broadcast_streaming?: string | null
           created_at?: string
           data_source?: string | null
           game_date: string
           game_id: string
+          game_importance?: string | null
           game_time: string
           home_record?: string | null
           home_score?: number | null
           home_team: string
           id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
           network?: string | null
           season_year?: number
           sport: string
+          spread?: number | null
           status?: string
+          total_line?: number | null
           updated_at?: string
           venue?: string | null
+          venue_capacity?: number | null
+          venue_location?: string | null
+          weather_condition?: string | null
+          weather_temp?: number | null
           week_number?: number | null
         }
         Update: {
           away_record?: string | null
           away_score?: number | null
           away_team?: string
+          broadcast_network?: string | null
+          broadcast_streaming?: string | null
           created_at?: string
           data_source?: string | null
           game_date?: string
           game_id?: string
+          game_importance?: string | null
           game_time?: string
           home_record?: string | null
           home_score?: number | null
           home_team?: string
           id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
           network?: string | null
           season_year?: number
           sport?: string
+          spread?: number | null
           status?: string
+          total_line?: number | null
           updated_at?: string
           venue?: string | null
+          venue_capacity?: number | null
+          venue_location?: string | null
+          weather_condition?: string | null
+          weather_temp?: number | null
           week_number?: number | null
+        }
+        Relationships: []
+      }
+      live_game_stats: {
+        Row: {
+          away_score: number | null
+          away_team: string
+          game_id: string
+          game_status: string | null
+          home_score: number | null
+          home_team: string
+          id: string
+          last_play: string | null
+          player_stats: Json | null
+          quarter_period: string | null
+          sport: string
+          team_stats: Json | null
+          time_remaining: string | null
+          updated_at: string
+        }
+        Insert: {
+          away_score?: number | null
+          away_team: string
+          game_id: string
+          game_status?: string | null
+          home_score?: number | null
+          home_team: string
+          id?: string
+          last_play?: string | null
+          player_stats?: Json | null
+          quarter_period?: string | null
+          sport: string
+          team_stats?: Json | null
+          time_remaining?: string | null
+          updated_at?: string
+        }
+        Update: {
+          away_score?: number | null
+          away_team?: string
+          game_id?: string
+          game_status?: string | null
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          last_play?: string | null
+          player_stats?: Json | null
+          quarter_period?: string | null
+          sport?: string
+          team_stats?: Json | null
+          time_remaining?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -177,12 +261,17 @@ export type Database = {
           id: string
           last_updated: string
           line: number
+          line_movement: string | null
+          moneyline: number | null
+          opening_line: number | null
           over_odds: string
           player_name: string
           sport: string | null
           sportsbook: string
+          spread: number | null
           stat_type: string
           team: string
+          total_line: number | null
           under_odds: string
           value_rating: string | null
         }
@@ -192,12 +281,17 @@ export type Database = {
           id?: string
           last_updated?: string
           line: number
+          line_movement?: string | null
+          moneyline?: number | null
+          opening_line?: number | null
           over_odds: string
           player_name: string
           sport?: string | null
           sportsbook: string
+          spread?: number | null
           stat_type: string
           team: string
+          total_line?: number | null
           under_odds: string
           value_rating?: string | null
         }
@@ -207,12 +301,17 @@ export type Database = {
           id?: string
           last_updated?: string
           line?: number
+          line_movement?: string | null
+          moneyline?: number | null
+          opening_line?: number | null
           over_odds?: string
           player_name?: string
           sport?: string | null
           sportsbook?: string
+          spread?: number | null
           stat_type?: string
           team?: string
+          total_line?: number | null
           under_odds?: string
           value_rating?: string | null
         }
@@ -409,41 +508,188 @@ export type Database = {
         }
         Relationships: []
       }
+      player_profiles: {
+        Row: {
+          age: number | null
+          birth_date: string | null
+          career_stats: Json | null
+          college: string | null
+          created_at: string
+          depth_chart_order: number | null
+          draft_pick: number | null
+          draft_round: number | null
+          draft_year: number | null
+          height: string | null
+          id: string
+          injury_detail: string | null
+          injury_status: string | null
+          jersey_number: number | null
+          photo_url: string | null
+          player_id: string
+          player_name: string
+          position: string | null
+          sport: string
+          team: string
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          age?: number | null
+          birth_date?: string | null
+          career_stats?: Json | null
+          college?: string | null
+          created_at?: string
+          depth_chart_order?: number | null
+          draft_pick?: number | null
+          draft_round?: number | null
+          draft_year?: number | null
+          height?: string | null
+          id?: string
+          injury_detail?: string | null
+          injury_status?: string | null
+          jersey_number?: number | null
+          photo_url?: string | null
+          player_id: string
+          player_name: string
+          position?: string | null
+          sport: string
+          team: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          age?: number | null
+          birth_date?: string | null
+          career_stats?: Json | null
+          college?: string | null
+          created_at?: string
+          depth_chart_order?: number | null
+          draft_pick?: number | null
+          draft_round?: number | null
+          draft_year?: number | null
+          height?: string | null
+          id?: string
+          injury_detail?: string | null
+          injury_status?: string | null
+          jersey_number?: number | null
+          photo_url?: string | null
+          player_id?: string
+          player_name?: string
+          position?: string | null
+          sport?: string
+          team?: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      player_projections: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          dfs_draftkings_points: number | null
+          dfs_fanduel_points: number | null
+          game_date: string
+          id: string
+          matchup_rating: string | null
+          player_id: string
+          player_name: string
+          projected_stats: Json | null
+          projection_date: string
+          sport: string
+          team: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          dfs_draftkings_points?: number | null
+          dfs_fanduel_points?: number | null
+          game_date: string
+          id?: string
+          matchup_rating?: string | null
+          player_id: string
+          player_name: string
+          projected_stats?: Json | null
+          projection_date?: string
+          sport: string
+          team: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          dfs_draftkings_points?: number | null
+          dfs_fanduel_points?: number | null
+          game_date?: string
+          id?: string
+          matchup_rating?: string | null
+          player_id?: string
+          player_name?: string
+          projected_stats?: Json | null
+          projection_date?: string
+          sport?: string
+          team?: string
+        }
+        Relationships: []
+      }
       player_stats: {
         Row: {
           created_at: string
+          field_goal_percentage: number | null
+          free_throw_percentage: number | null
           game_date: string
+          home_away: string | null
           id: string
+          minutes_played: number | null
+          opponent_team: string | null
           player_name: string
+          plus_minus: number | null
           season_year: number
           source: string
           stat_type: string
           team: string
+          three_point_percentage: number | null
           updated_at: string
+          usage_rate: number | null
           value: number
         }
         Insert: {
           created_at?: string
+          field_goal_percentage?: number | null
+          free_throw_percentage?: number | null
           game_date: string
+          home_away?: string | null
           id?: string
+          minutes_played?: number | null
+          opponent_team?: string | null
           player_name: string
+          plus_minus?: number | null
           season_year: number
           source?: string
           stat_type: string
           team: string
+          three_point_percentage?: number | null
           updated_at?: string
+          usage_rate?: number | null
           value: number
         }
         Update: {
           created_at?: string
+          field_goal_percentage?: number | null
+          free_throw_percentage?: number | null
           game_date?: string
+          home_away?: string | null
           id?: string
+          minutes_played?: number | null
+          opponent_team?: string | null
           player_name?: string
+          plus_minus?: number | null
           season_year?: number
           source?: string
           stat_type?: string
           team?: string
+          three_point_percentage?: number | null
           updated_at?: string
+          usage_rate?: number | null
           value?: number
         }
         Relationships: []

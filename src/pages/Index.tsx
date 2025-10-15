@@ -32,34 +32,33 @@ const Index = () => {
 
   const populateLiveData = async () => {
     setIsPopulatingData(true);
-    toast.info('Fetching live data from The Odds API...');
+    toast.info('Fetching comprehensive sports data from Sports Data IO + The Odds API...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('populate-live-data');
+      const { data, error } = await supabase.functions.invoke('populate-all-sports-data');
       
       if (error) {
-        console.error('Error populating live data:', error);
+        console.error('Error populating sports data:', error);
         
-        if (error.message?.includes('THE_ODDS_API_KEY')) {
-          toast.error('The Odds API key is not configured. Please add it in Supabase secrets.');
+        if (error.message?.includes('API_KEY')) {
+          toast.error('API key is not configured. Please add Sports Data IO and The Odds API keys in Supabase secrets.');
         } else {
-          toast.error('Failed to populate live data: ' + error.message);
+          toast.error('Failed to populate sports data: ' + error.message);
         }
         return;
       }
 
-      console.log('Live data response:', data);
+      console.log('Sports data response:', data);
       
-      toast.success('Live data loaded successfully from The Odds API!');
+      toast.success(`Successfully loaded data: ${data?.summary?.players || 0} sports with player profiles, projections, stats, schedules, and odds!`);
       
-      // Refresh opportunities after populating data
       setTimeout(() => {
         refetchOpportunities();
       }, 1000);
       
     } catch (err) {
       console.error('Error:', err);
-      toast.error('Failed to populate live data');
+      toast.error('Failed to populate sports data');
     } finally {
       setIsPopulatingData(false);
     }
