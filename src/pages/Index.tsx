@@ -32,16 +32,25 @@ const Index = () => {
 
   const populateLiveData = async () => {
     setIsPopulatingData(true);
+    toast.info('Fetching live data from The Odds API...');
+    
     try {
       const { data, error } = await supabase.functions.invoke('populate-live-data');
       
       if (error) {
         console.error('Error populating live data:', error);
-        toast.error('Failed to populate live data');
+        
+        if (error.message?.includes('THE_ODDS_API_KEY')) {
+          toast.error('The Odds API key is not configured. Please add it in Supabase secrets.');
+        } else {
+          toast.error('Failed to populate live data: ' + error.message);
+        }
         return;
       }
 
-      toast.success('Live data populated successfully! Refreshing opportunities...');
+      console.log('Live data response:', data);
+      
+      toast.success('Live data loaded successfully from The Odds API!');
       
       // Refresh opportunities after populating data
       setTimeout(() => {

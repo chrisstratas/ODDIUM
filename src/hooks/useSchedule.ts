@@ -107,6 +107,8 @@ export const useSchedule = (sport: string, selectedDate?: Date) => {
   const refreshLiveScores = async () => {
     try {
       console.log('Refreshing live scores from The Odds API...');
+      setLoading(true);
+      setError(null);
       
       // Map sport to Odds API sport key
       const sportKeyMap: Record<string, string> = {
@@ -126,6 +128,8 @@ export const useSchedule = (sport: string, selectedDate?: Date) => {
       
       if (response.error) {
         console.error('Error refreshing live scores:', response.error);
+        setError(response.error.message || 'Failed to refresh live scores');
+        setLoading(false);
         throw response.error;
       }
       
@@ -139,6 +143,7 @@ export const useSchedule = (sport: string, selectedDate?: Date) => {
     } catch (err) {
       console.error('Error refreshing live scores:', err);
       setError(err instanceof Error ? err.message : 'Failed to refresh live scores');
+      setLoading(false);
     }
   };
 
