@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,7 +23,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { sport } = await req.json();
+    // Validate input
+    const requestSchema = z.object({
+      sport: z.enum(['NBA', 'NFL', 'MLB', 'NHL', 'WNBA'])
+    });
+    
+    const requestData = await req.json();
+    const { sport } = requestSchema.parse(requestData);
     console.log(`Fetching player data for ${sport}...`);
 
     const sportMap: Record<string, string> = {
@@ -92,10 +99,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in fetch-sportsdata-players:', error);
+    console.error('[ERROR] fetch-sportsdata-players:', error.name);
+    
+    const isValidationError = error.name === 'ZodError';
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        error: isValidationError ? 'Invalid input parameters' : 'Failed to fetch player data',
+        code: isValidationError ? 'VALIDATION_ERROR' : 'SERVER_ERROR'
+      }),
+      { status: isValidationError ? 400 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

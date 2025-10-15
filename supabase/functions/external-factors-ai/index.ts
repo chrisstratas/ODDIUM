@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -19,16 +20,20 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    const { 
-      sport, 
-      playerName, 
-      analysisType = 'external_factors',
-      recentStats = [],
-      currentFactors = [],
-      stat = '',
-      line = 0,
-      team = ''
-    } = await req.json();
+    // Validate input
+    const requestSchema = z.object({
+      sport: z.enum(['NFL', 'NBA', 'MLB', 'NHL', 'WNBA']),
+      playerName: z.string().max(100),
+      analysisType: z.string().max(50).default('external_factors'),
+      recentStats: z.array(z.any()).default([]),
+      currentFactors: z.array(z.any()).default([]),
+      stat: z.string().max(50).default(''),
+      line: z.number().default(0),
+      team: z.string().max(50).default('')
+    });
+    
+    const requestData = await req.json();
+    const { sport, playerName, analysisType, recentStats, currentFactors, stat, line, team } = requestSchema.parse(requestData);
 
     if (!openAIApiKey) {
       return new Response(JSON.stringify({ 
@@ -108,9 +113,9 @@ Focus on factors not already identified and provide specific, actionable insight
     });
 
     if (!response.ok) {
-      console.error('OpenAI API error:', response.status, await response.text());
+      console.error('[ERROR] OpenAI API failed:', response.status);
       return new Response(JSON.stringify({ 
-        error: 'Failed to generate insights',
+        error: 'AI service unavailable',
         insights: []
       }), {
         status: 200,
@@ -139,12 +144,15 @@ Focus on factors not already identified and provide specific, actionable insight
     });
 
   } catch (error) {
-    console.error('Error in external-factors-ai function:', error);
+    console.error('[ERROR] external-factors-ai:', error.name);
+    
+    const isValidationError = error.name === 'ZodError';
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: isValidationError ? 'Invalid request parameters' : 'Failed to generate insights',
+      code: isValidationError ? 'VALIDATION_ERROR' : 'SERVER_ERROR',
       insights: []
     }), {
-      status: 500,
+      status: isValidationError ? 400 : 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

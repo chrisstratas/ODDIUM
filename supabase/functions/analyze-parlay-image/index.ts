@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,11 +20,14 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const { image, imageType } = await req.json();
+    // Validate input
+    const requestSchema = z.object({
+      image: z.string().min(1).max(10 * 1024 * 1024), // Max 10MB base64 string
+      imageType: z.string().regex(/^image\/(jpeg|jpg|png|webp)$/).optional().default('image/jpeg')
+    });
     
-    if (!image) {
-      throw new Error('No image provided');
-    }
+    const requestData = await req.json();
+    const { image, imageType } = requestSchema.parse(requestData);
 
     console.log('Analyzing parlay image with OpenAI Vision...');
 
@@ -92,9 +96,8 @@ Format your response as JSON with the following structure:
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+      console.error('[ERROR] OpenAI API failed:', response.status);
+      throw new Error('AI image analysis unavailable');
     }
 
     const data = await response.json();
@@ -126,12 +129,15 @@ Format your response as JSON with the following structure:
     });
 
   } catch (error) {
-    console.error('Error in analyze-parlay-image function:', error);
+    console.error('[ERROR] analyze-parlay-image:', error.name);
+    
+    const isValidationError = error.name === 'ZodError';
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: isValidationError ? 'Invalid image data or format' : 'Failed to analyze parlay image',
+      code: isValidationError ? 'VALIDATION_ERROR' : 'SERVER_ERROR'
     }), {
-      status: 500,
+      status: isValidationError ? 400 : 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

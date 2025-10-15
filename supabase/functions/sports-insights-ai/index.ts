@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +31,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { sport, playerName, analysisType } = await req.json();
+    // Validate input
+    const requestSchema = z.object({
+      sport: z.enum(['NFL', 'NBA', 'MLB', 'NHL', 'WNBA']),
+      playerName: z.string().max(100).optional(),
+      analysisType: z.enum(['current_props', 'recent_performance', 'sport_trends']).optional()
+    });
+    
+    const requestData = await req.json();
+    const { sport, playerName, analysisType } = requestSchema.parse(requestData);
     
     console.log(`Generating AI insights for ${sport} - ${playerName || 'all players'} - ${analysisType}`);
 
@@ -69,11 +78,7 @@ serve(async (req) => {
     ]);
 
     if (recentGamesResult.error || propsResult.error || analyticsResult.error) {
-      console.error('Database error:', { 
-        recentGamesResult: recentGamesResult.error, 
-        propsResult: propsResult.error, 
-        analyticsResult: analyticsResult.error 
-      });
+      console.error('[ERROR] Database query failed');
     }
 
     const recentGames = recentGamesResult.data || [];
@@ -194,9 +199,8 @@ Please analyze and provide:
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('[ERROR] OpenAI API failed:', response.status);
+      throw new Error('AI service unavailable');
     }
 
     const aiResponse = await response.json();
@@ -224,14 +228,16 @@ Please analyze and provide:
     });
 
   } catch (error) {
-    console.error('Error in sports-insights-ai function:', error);
+    console.error('[ERROR] sports-insights-ai:', error.name);
+    
+    const isValidationError = error.name === 'ZodError';
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: 'Failed to generate AI sports insights'
+        error: isValidationError ? 'Invalid request parameters' : 'Failed to generate insights',
+        code: isValidationError ? 'VALIDATION_ERROR' : 'SERVER_ERROR'
       }),
       {
-        status: 500,
+        status: isValidationError ? 400 : 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );

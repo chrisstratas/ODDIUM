@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -19,12 +20,16 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    const { 
-      category,
-      sport = 'all',
-      minEdge = 0,
-      minConfidence = 50
-    } = await req.json();
+    // Validate input
+    const requestSchema = z.object({
+      category: z.enum(['player_props', 'arbitrage', 'derivative_markets']).optional(),
+      sport: z.enum(['NBA', 'NFL', 'MLB', 'NHL', 'WNBA', 'all']).default('all'),
+      minEdge: z.number().min(0).max(100).default(0),
+      minConfidence: z.number().min(0).max(100).default(50)
+    });
+    
+    const requestData = await req.json();
+    const { category, sport, minEdge, minConfidence } = requestSchema.parse(requestData);
 
     console.log('Analyzing edge opportunities for:', { category, sport, minEdge, minConfidence });
 
@@ -122,12 +127,15 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in analyze-edge-opportunities function:', error);
+    console.error('[ERROR] analyze-edge-opportunities:', error.name);
+    
+    const isValidationError = error.name === 'ZodError';
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: isValidationError ? 'Invalid request parameters' : 'Failed to analyze opportunities',
+      code: isValidationError ? 'VALIDATION_ERROR' : 'SERVER_ERROR',
       opportunities: []
     }), {
-      status: 500,
+      status: isValidationError ? 400 : 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
