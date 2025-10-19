@@ -139,6 +139,45 @@ serve(async (req) => {
             required: ["playerName", "sport"]
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "search_schedule",
+          description: "Search game schedules by sport, team, date range, or status",
+          parameters: {
+            type: "object",
+            properties: {
+              sport: { 
+                type: "string", 
+                enum: ["NBA", "NFL", "MLB", "NHL", "WNBA", "all"],
+                description: "Sport to search (or 'all' for all sports)"
+              },
+              team: { 
+                type: "string", 
+                description: "Team name to filter by (home or away)" 
+              },
+              dateFrom: { 
+                type: "string", 
+                description: "Start date in YYYY-MM-DD format (default: today)" 
+              },
+              dateTo: { 
+                type: "string", 
+                description: "End date in YYYY-MM-DD format (default: 7 days from now)" 
+              },
+              status: { 
+                type: "string", 
+                enum: ["scheduled", "live", "final"],
+                description: "Game status filter"
+              },
+              limit: { 
+                type: "number", 
+                description: "Maximum number of games to return (default: 10)" 
+              }
+            },
+            required: []
+          }
+        }
       }
     ];
 
@@ -291,6 +330,63 @@ When responding:
               analytics: analyticsData,
               statType: args.statType
             };
+            break;
+
+          case 'search_schedule':
+            const today = new Date().toISOString().split('T')[0];
+            const sevenDaysLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            
+            let query = supabase
+              .from('games_schedule')
+              .select('*')
+              .order('game_date', { ascending: true })
+              .order('game_time', { ascending: true });
+            
+            // Apply filters
+            if (args.sport && args.sport !== 'all') {
+              query = query.eq('sport', args.sport);
+            }
+            
+            if (args.team) {
+              query = query.or(`home_team.ilike.%${args.team}%,away_team.ilike.%${args.team}%`);
+            }
+            
+            if (args.dateFrom) {
+              query = query.gte('game_date', args.dateFrom);
+            } else {
+              query = query.gte('game_date', today);
+            }
+            
+            if (args.dateTo) {
+              query = query.lte('game_date', args.dateTo);
+            } else {
+              query = query.lte('game_date', sevenDaysLater);
+            }
+            
+            if (args.status) {
+              query = query.eq('status', args.status);
+            }
+            
+            query = query.limit(args.limit || 10);
+            
+            const { data: games, error: gamesError } = await query;
+            
+            if (gamesError) {
+              result = { error: gamesError.message };
+            } else {
+              result = {
+                gamesFound: games.length,
+                games: games.map((g: any) => ({
+                  sport: g.sport,
+                  matchup: `${g.away_team} @ ${g.home_team}`,
+                  date: g.game_date,
+                  time: g.game_time,
+                  status: g.status,
+                  venue: g.venue,
+                  network: g.network
+                }))
+              };
+            }
             break;
 
           default:
