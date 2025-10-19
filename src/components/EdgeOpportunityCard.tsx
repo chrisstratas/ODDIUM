@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useAIChat } from '@/hooks/useAIChat';
 import { 
   Target, 
   Zap, 
@@ -11,7 +12,8 @@ import {
   Clock,
   TrendingUp,
   AlertTriangle,
-  Star
+  Star,
+  MessageSquare
 } from 'lucide-react';
 
 interface EdgeOpportunity {
@@ -39,6 +41,13 @@ const EdgeOpportunityCard: React.FC<EdgeOpportunityCardProps> = ({
   opportunity,
   onExplore
 }) => {
+  const { sendMessage } = useAIChat();
+
+  const handleAskAI = () => {
+    const message = `Explain this edge opportunity in detail: ${opportunity.title}. Category: ${getCategoryLabel(opportunity.category)}, Edge: ${opportunity.edge}%, Confidence: ${opportunity.confidence}%. ${opportunity.player ? `Player: ${opportunity.player}` : ''}`;
+    sendMessage(message);
+  };
+
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'player_props': return <Target className="w-4 h-4" />;
@@ -173,10 +182,10 @@ const EdgeOpportunityCard: React.FC<EdgeOpportunityCardProps> = ({
           variant="outline" 
           size="sm" 
           className="w-full"
-          onClick={onExplore}
+          onClick={handleAskAI}
         >
-          <Target className="w-4 h-4 mr-2" />
-          Explore This Edge
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Ask AI About This Edge
         </Button>
       </CardContent>
     </Card>

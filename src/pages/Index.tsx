@@ -5,6 +5,7 @@ import DailySchedule from "@/components/DailySchedule";
 import BettingInsights from "@/components/BettingInsights";
 import EdgeCategories from "@/components/EdgeCategories";
 import EdgeOpportunityCard from "@/components/EdgeOpportunityCard";
+import { AIAssistant } from "@/components/AIAssistant";
 import { useEdgeOpportunities } from "@/hooks/useEdgeOpportunities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -201,6 +202,9 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* AI Assistant */}
+      <AIAssistant context={{ sport: selectedSport, category: selectedCategory }} />
     </div>
   );
 };

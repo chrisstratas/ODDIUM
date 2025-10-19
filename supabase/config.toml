@@ -1,5 +1,14 @@
 project_id = "gmwdwxkfygppiavyysyv"
 
+[functions.ai-betting-strategy]
+verify_jwt = false
+
+[functions.ai-edge-assistant]
+verify_jwt = false
+
+[functions.ai-explain-edge]
+verify_jwt = false
+
 [functions.analyze-edge-opportunities]
 verify_jwt = true
 
