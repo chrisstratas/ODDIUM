@@ -33,6 +33,12 @@ serve(async (req) => {
     const today = date || new Date().toISOString().split('T')[0];
     console.log(`Fetching ${sport} odds from SportsData IO for ${today}...`);
 
+    // Track old odds for movement detection
+    const { data: existingOdds } = await supabase
+      .from('live_odds')
+      .select('player_name, stat_type, line, sportsbook')
+      .gte('last_updated', new Date(Date.now() - 30 * 60 * 1000).toISOString()); // Last 30 mins
+
     const sportKey = sport.toLowerCase();
     const url = `https://api.sportsdata.io/v3/${sportKey}/odds/json/AlternateMarketGameOddsByDate/${today}`;
 
@@ -78,6 +84,32 @@ serve(async (req) => {
     }
 
     if (transformedOdds.length > 0) {
+      // Detect line movements before upserting
+      const movements = [];
+      if (existingOdds) {
+        for (const newOdd of transformedOdds) {
+          const oldOdd = existingOdds.find(o => 
+            o.player_name === newOdd.player_name && 
+            o.stat_type === newOdd.stat_type &&
+            o.sportsbook === newOdd.sportsbook
+          );
+          
+          if (oldOdd && parseFloat(oldOdd.line) !== parseFloat(newOdd.line)) {
+            const movementSize = parseFloat(newOdd.line) - parseFloat(oldOdd.line);
+            movements.push({
+              player_name: newOdd.player_name,
+              stat_type: newOdd.stat_type,
+              sport: newOdd.sport,
+              old_line: parseFloat(oldOdd.line),
+              new_line: parseFloat(newOdd.line),
+              movement_size: movementSize,
+              sharp_action: Math.abs(movementSize) >= 1,
+              sportsbook: newOdd.sportsbook
+            });
+          }
+        }
+      }
+
       const { error: upsertError } = await supabase
         .from('live_odds')
         .upsert(transformedOdds, {
@@ -88,6 +120,19 @@ serve(async (req) => {
       if (upsertError) {
         console.error('Error upserting odds:', upsertError);
         throw upsertError;
+      }
+
+      // Log movements to database
+      if (movements.length > 0) {
+        const { error: movementError } = await supabase
+          .from('odds_movements')
+          .insert(movements);
+          
+        if (movementError) {
+          console.error('Error logging movements:', movementError);
+        } else {
+          console.log(`Logged ${movements.length} line movements`);
+        }
       }
 
       console.log(`Successfully upserted ${transformedOdds.length} odds records`);

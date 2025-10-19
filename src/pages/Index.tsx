@@ -12,22 +12,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Target, TrendingUp, Zap, RefreshCw, Database, Bot, Send, Sparkles, LineChart } from "lucide-react";
+import { Target, TrendingUp, Zap, RefreshCw, Database, Bot, Send, Sparkles, LineChart, Settings, Radio } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { LiveDataManager } from "@/components/LiveDataManager";
+import { AutoRefreshSettings } from "@/components/AutoRefreshSettings";
+import { OddsMovementAlert } from "@/components/OddsMovementAlert";
+import { formatDistanceToNow } from "date-fns";
 
 const Index = () => {
   const [selectedSport, setSelectedSport] = useState("NFL");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isPopulatingData, setIsPopulatingData] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(5 * 60 * 1000);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
   
   const { 
     opportunities, 
     loading: opportunitiesLoading,
-    refetch: refetchOpportunities
+    refetch: refetchOpportunities,
+    recentMovements
   } = useEdgeOpportunities({
     category: selectedCategory || undefined,
     sport: selectedSport,
@@ -64,6 +73,7 @@ const Index = () => {
       
       toast.success(`Successfully loaded data: ${data?.summary?.players || 0} sports with player profiles, projections, stats, schedules, and odds!`);
       
+      setLastDataUpdate(new Date());
       setTimeout(() => {
         refetchOpportunities();
       }, 1000);
@@ -74,6 +84,11 @@ const Index = () => {
     } finally {
       setIsPopulatingData(false);
     }
+  };
+
+  const handleRefreshComplete = () => {
+    setLastDataUpdate(new Date());
+    refetchOpportunities();
   };
 
   const handleSendMessage = async () => {
@@ -114,6 +129,13 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-main">
       <Header />
+      
+      <LiveDataManager 
+        enabled={autoRefreshEnabled}
+        refreshInterval={refreshInterval}
+        onRefreshComplete={handleRefreshComplete}
+      />
+      
       <main className="container mx-auto px-4 py-6 space-y-8">
         {/* Hero Section */}
         <div className="text-center mb-8 space-y-6">
@@ -155,7 +177,45 @@ const Index = () => {
               <RefreshCw className="w-5 h-5 mr-2" />
               Refresh Opportunities
             </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="w-5 h-5 mr-2" />
+              Auto-Refresh
+            </Button>
           </div>
+        </div>
+        
+        {/* Live Status Bar */}
+        <div className="flex items-center justify-between p-4 rounded-lg bg-card/50 border">
+          <div className="flex items-center gap-3">
+            {autoRefreshEnabled && (
+              <div className="flex items-center gap-2">
+                <Radio className="w-4 h-4 text-green-500 animate-pulse" />
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                  Auto-Refresh Active
+                </span>
+              </div>
+            )}
+            {lastDataUpdate && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Last updated:</span>
+                <Badge variant="secondary">
+                  {formatDistanceToNow(lastDataUpdate, { addSuffix: true })}
+                </Badge>
+              </div>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </Button>
         </div>
 
         <Tabs defaultValue="opportunities" className="w-full">
@@ -189,56 +249,65 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="opportunities" className="space-y-6">
-            <Card className="bg-gradient-card border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5 text-primary" />
-                  Current Edge Opportunities
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Live opportunities across all five edge categories, updated in real-time
-                </p>
-              </CardHeader>
-              <CardContent>
-                {opportunitiesLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
-                      <Card key={i} className="animate-pulse">
-                        <CardContent className="p-4 space-y-3">
-                          <div className="h-4 bg-muted rounded w-3/4"></div>
-                          <div className="h-3 bg-muted rounded w-1/2"></div>
-                          <div className="h-16 bg-muted rounded"></div>
-                          <div className="h-8 bg-muted rounded"></div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : opportunities.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {opportunities.map((opportunity) => (
-                      <EdgeOpportunityCard
-                        key={opportunity.id}
-                        opportunity={opportunity}
-                        onExplore={() => {
-                          // Navigate to detailed analysis
-                          console.log('Exploring opportunity:', opportunity.id);
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Target className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                    <p className="text-muted-foreground">
-                      No edge opportunities found matching current filters.
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="bg-gradient-card border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="w-5 h-5 text-primary" />
+                      Current Edge Opportunities
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Live opportunities across all five edge categories, updated in real-time
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Try adjusting your sport or category selection.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardHeader>
+                  <CardContent>
+                    {opportunitiesLoading ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[1, 2, 3, 4].map((i) => (
+                          <Card key={i} className="animate-pulse">
+                            <CardContent className="p-4 space-y-3">
+                              <div className="h-4 bg-muted rounded w-3/4"></div>
+                              <div className="h-3 bg-muted rounded w-1/2"></div>
+                              <div className="h-16 bg-muted rounded"></div>
+                              <div className="h-8 bg-muted rounded"></div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : opportunities.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {opportunities.map((opportunity) => (
+                          <EdgeOpportunityCard
+                            key={opportunity.id}
+                            opportunity={opportunity}
+                            onExplore={() => {
+                              console.log('Exploring opportunity:', opportunity.id);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Target className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                        <p className="text-muted-foreground">
+                          No edge opportunities found matching current filters.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Try adjusting your sport or category selection.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {recentMovements && recentMovements.length > 0 && (
+                <div>
+                  <OddsMovementAlert movements={recentMovements} />
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="ai-assistant" className="space-y-6">
@@ -378,6 +447,15 @@ const Index = () => {
             </div>
           </TabsContent>
         </Tabs>
+        
+        <AutoRefreshSettings
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          currentInterval={refreshInterval}
+          onIntervalChange={setRefreshInterval}
+          autoRefreshEnabled={autoRefreshEnabled}
+          onAutoRefreshChange={setAutoRefreshEnabled}
+        />
       </main>
     </div>
   );

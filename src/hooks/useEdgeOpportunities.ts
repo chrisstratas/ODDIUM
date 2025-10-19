@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeOdds } from './useRealtimeOdds';
 
 export interface EdgeOpportunity {
   id: string;
@@ -93,6 +94,12 @@ export const useEdgeOpportunities = ({
     }
   };
 
+  // Subscribe to realtime odds updates
+  const { recentMovements } = useRealtimeOdds(() => {
+    // Refetch opportunities when odds update
+    fetchOpportunities();
+  });
+
   useEffect(() => {
     fetchOpportunities();
   }, [category, sport, minEdge, minConfidence]);
@@ -102,6 +109,7 @@ export const useEdgeOpportunities = ({
     loading,
     error,
     refetch: fetchOpportunities,
-    analyzeNew: analyzeNewOpportunities
+    analyzeNew: analyzeNewOpportunities,
+    recentMovements
   };
 };

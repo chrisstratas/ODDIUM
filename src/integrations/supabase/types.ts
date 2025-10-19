@@ -317,6 +317,51 @@ export type Database = {
         }
         Relationships: []
       }
+      odds_movements: {
+        Row: {
+          created_at: string | null
+          id: string
+          movement_size: number | null
+          new_line: number | null
+          new_odds: string | null
+          old_line: number | null
+          old_odds: string | null
+          player_name: string
+          sharp_action: boolean | null
+          sport: string
+          sportsbook: string | null
+          stat_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          movement_size?: number | null
+          new_line?: number | null
+          new_odds?: string | null
+          old_line?: number | null
+          old_odds?: string | null
+          player_name: string
+          sharp_action?: boolean | null
+          sport: string
+          sportsbook?: string | null
+          stat_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          movement_size?: number | null
+          new_line?: number | null
+          new_odds?: string | null
+          old_line?: number | null
+          old_odds?: string | null
+          player_name?: string
+          sharp_action?: boolean | null
+          sport?: string
+          sportsbook?: string | null
+          stat_type?: string
+        }
+        Relationships: []
+      }
       parlay_picks: {
         Row: {
           bet_type: string
@@ -791,6 +836,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_refresh_preferences: {
+        Row: {
+          auto_refresh_enabled: boolean | null
+          created_at: string | null
+          id: string
+          notifications_enabled: boolean | null
+          refresh_interval: number | null
+          sports_to_refresh: string[] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          auto_refresh_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          notifications_enabled?: boolean | null
+          refresh_interval?: number | null
+          sports_to_refresh?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          auto_refresh_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          notifications_enabled?: boolean | null
+          refresh_interval?: number | null
+          sports_to_refresh?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
