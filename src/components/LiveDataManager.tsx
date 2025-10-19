@@ -19,14 +19,18 @@ export const LiveDataManager = ({
     console.log('Auto-refreshing live data...');
     
     try {
-      // Fetch odds in background
-      const { error: oddsError } = await supabase.functions.invoke('fetch-sportsdata-odds', {
-        body: { sport: 'all' }
-      });
+      const sports = ['NBA', 'NFL', 'MLB', 'NHL', 'WNBA'];
+      
+      for (const sport of sports) {
+        const { error } = await supabase.functions.invoke('fetch-sportsdata-odds', {
+          body: { sport }
+        });
 
-      if (oddsError) {
-        console.error('Auto-refresh odds error:', oddsError);
-        return;
+        if (error) {
+          console.error(`Auto-refresh ${sport} odds error:`, error);
+        } else {
+          console.log(`Successfully refreshed ${sport} odds`);
+        }
       }
 
       onRefreshComplete?.();
