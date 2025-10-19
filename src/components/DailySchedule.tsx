@@ -43,26 +43,15 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
     try {
       setRefreshing(true);
       
-      const sportKeyMap: Record<string, string> = {
-        'NBA': 'basketball_nba',
-        'NFL': 'americanfootball_nfl',
-        'MLB': 'baseball_mlb',
-        'NHL': 'icehockey_nhl',
-        'WNBA': 'basketball_wnba',
-        'all': 'basketball_nba'
-      };
-      
-      const sportKey = sportKeyMap[sport] || 'basketball_nba';
-      
-      const { data, error } = await supabase.functions.invoke('fetch-sports-schedule', {
-        body: { sport: sportKey }
+      const { data, error } = await supabase.functions.invoke('fetch-sportsdata-schedule', {
+        body: { sport: sport }
       });
       
       if (error) {
         console.error('Error refreshing live scores:', error);
         toast({
           title: "Live Scores Error",
-          description: "Failed to fetch live scores from The Odds API",
+          description: "Failed to fetch live scores from SportsData IO",
           variant: "destructive",
         });
         return;
@@ -70,7 +59,7 @@ const DailySchedule = ({ sport }: DailyScheduleProps) => {
       
       toast({
         title: "Live Scores Updated",
-        description: `Refreshed ${data.gamesCount} games from The Odds API`,
+        description: `Refreshed ${data.gamesCount} games from SportsData IO`,
       });
       
       setTimeout(() => fetchScheduleFromDB(), 500);

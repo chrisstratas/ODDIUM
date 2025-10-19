@@ -18,16 +18,16 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const oddsApiKey = Deno.env.get('THE_ODDS_API_KEY');
+    const sportsdataApiKey = Deno.env.get('SPORTSDATA_IO_API_KEY');
 
-    console.log('Starting prop analytics population...');
+    console.log('Starting prop analytics population from SportsData IO...');
 
-    if (!oddsApiKey) {
-      console.log('No THE_ODDS_API_KEY found, generating mock analytics data...');
+    if (!sportsdataApiKey) {
+      console.log('No SPORTSDATA_IO_API_KEY found, generating mock analytics data...');
       await generateMockAnalytics(supabase);
     } else {
-      console.log('Using The Odds API to fetch analytics data...');
-      await fetchOddsApiAnalytics(supabase, oddsApiKey);
+      console.log('Using SportsData IO to fetch analytics data...');
+      await fetchSportsdataAnalytics(supabase, sportsdataApiKey);
     }
 
     return new Response(JSON.stringify({
@@ -49,61 +49,61 @@ serve(async (req) => {
   }
 });
 
-async function fetchOddsApiAnalytics(supabase: any, apiKey: string) {
-  const sports = [
-    { name: 'NBA', sportKey: 'basketball_nba' },
-    { name: 'NFL', sportKey: 'americanfootball_nfl' },
-    { name: 'MLB', sportKey: 'baseball_mlb' },
-    { name: 'NHL', sportKey: 'icehockey_nhl' }
-  ];
+async function fetchSportsdataAnalytics(supabase: any, apiKey: string) {
+  const sports = ['NBA', 'NFL', 'MLB', 'NHL'];
   const allAnalytics = [];
 
   for (const sport of sports) {
     try {
-      console.log(`Fetching ${sport.name} props from The Odds API...`);
+      console.log(`Fetching ${sport} projections from SportsData IO...`);
       
-      const propsResponse = await fetch(
-        `https://api.the-odds-api.com/v4/sports/${sport.sportKey}/odds/?apiKey=${apiKey}&regions=us&markets=player_points,player_rebounds,player_assists`,
-        { method: 'GET' }
-      );
+      const today = new Date().toISOString().split('T')[0];
+      const sportKey = sport.toLowerCase();
+      const url = `https://api.sportsdata.io/v3/${sportKey}/projections/json/PlayerGameProjectionStatsByDate/${today}`;
 
-      if (propsResponse.ok) {
-        const data = await propsResponse.json();
-        console.log(`Received ${data.length || 0} games for ${sport.name}`);
+      const response = await fetch(url, {
+        headers: { 'Ocp-Apim-Subscription-Key': apiKey }
+      });
 
-        for (const game of data || []) {
-          for (const bookmaker of game.bookmakers || []) {
-            for (const market of bookmaker.markets || []) {
-              for (const outcome of market.outcomes || []) {
-                const analytics = {
-                  player_name: outcome.description || outcome.name,
-                  team: game.home_team,
-                  stat_type: mapMarketToStat(market.key),
-                  sport: sport.name,
-                  season_average: outcome.point || 15 + Math.random() * 15,
-                  recent_form: (outcome.point || 15) + (Math.random() * 10 - 5),
-                  hit_rate: 0.45 + Math.random() * 0.35,
-                  edge_percentage: -10 + Math.random() * 25,
-                  trend_direction: Math.random() > 0.5 ? 'up' : 'down',
-                  calculated_at: new Date().toISOString()
-                };
+      if (response.ok) {
+        const projections = await response.json();
+        console.log(`Received ${projections.length || 0} projections for ${sport}`);
 
-                allAnalytics.push(analytics);
-              }
+        for (const proj of projections || []) {
+          const playerName = proj.Name || proj.PlayerName;
+          const team = proj.Team || proj.TeamName;
+
+          const statTypes = getProjectionStats(sport, proj);
+          
+          for (const { statType, value } of statTypes) {
+            if (value && value > 0) {
+              const analytics = {
+                player_name: playerName,
+                team: team,
+                stat_type: statType,
+                sport: sport,
+                season_average: value,
+                recent_form: value + (Math.random() * 4 - 2),
+                hit_rate: 0.50 + Math.random() * 0.30,
+                edge_percentage: -5 + Math.random() * 20,
+                trend_direction: Math.random() > 0.5 ? 'up' : 'down',
+                calculated_at: new Date().toISOString()
+              };
+
+              allAnalytics.push(analytics);
             }
           }
         }
       } else {
-        console.warn(`Failed to fetch ${sport.name} props:`, propsResponse.status);
-        await generateMockAnalyticsForSport(sport.name, allAnalytics);
+        console.warn(`Failed to fetch ${sport} projections:`, response.status);
+        await generateMockAnalyticsForSport(sport, allAnalytics);
       }
     } catch (error) {
-      console.warn(`Error fetching ${sport.name} from The Odds API:`, error);
-      await generateMockAnalyticsForSport(sport.name, allAnalytics);
+      console.warn(`Error fetching ${sport} from SportsData IO:`, error);
+      await generateMockAnalyticsForSport(sport, allAnalytics);
     }
   }
 
-  // Insert analytics data
   if (allAnalytics.length > 0) {
     const { error } = await supabase
       .from('prop_analytics')
@@ -118,6 +118,32 @@ async function fetchOddsApiAnalytics(supabase: any, apiKey: string) {
 
     console.log(`Successfully inserted ${allAnalytics.length} analytics records`);
   }
+}
+
+function getProjectionStats(sport: string, proj: any): Array<{ statType: string, value: number }> {
+  const stats = [];
+  
+  if (sport === 'NBA') {
+    if (proj.Points) stats.push({ statType: 'Points', value: proj.Points });
+    if (proj.Rebounds) stats.push({ statType: 'Rebounds', value: proj.Rebounds });
+    if (proj.Assists) stats.push({ statType: 'Assists', value: proj.Assists });
+    if (proj.ThreePointersMade) stats.push({ statType: '3-Pointers Made', value: proj.ThreePointersMade });
+  } else if (sport === 'NFL') {
+    if (proj.PassingYards) stats.push({ statType: 'Passing Yards', value: proj.PassingYards });
+    if (proj.RushingYards) stats.push({ statType: 'Rushing Yards', value: proj.RushingYards });
+    if (proj.ReceivingYards) stats.push({ statType: 'Receiving Yards', value: proj.ReceivingYards });
+    if (proj.Receptions) stats.push({ statType: 'Receptions', value: proj.Receptions });
+  } else if (sport === 'MLB') {
+    if (proj.Hits) stats.push({ statType: 'Hits', value: proj.Hits });
+    if (proj.HomeRuns) stats.push({ statType: 'Home Runs', value: proj.HomeRuns });
+    if (proj.RunsBattedIn) stats.push({ statType: 'RBIs', value: proj.RunsBattedIn });
+  } else if (sport === 'NHL') {
+    if (proj.Goals) stats.push({ statType: 'Goals', value: proj.Goals });
+    if (proj.Assists) stats.push({ statType: 'Assists', value: proj.Assists });
+    if (proj.ShotsOnGoal) stats.push({ statType: 'Shots on Goal', value: proj.ShotsOnGoal });
+  }
+
+  return stats;
 }
 
 async function generateMockAnalyticsForSport(sport: string, allAnalytics: any[]) {

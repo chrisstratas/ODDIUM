@@ -17,26 +17,25 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('Starting live data population from The Odds API...');
+    console.log('Starting live data population from SportsData IO...');
 
-    const theOddsApiKey = Deno.env.get('THE_ODDS_API_KEY');
+    const sportsdataApiKey = Deno.env.get('SPORTSDATA_IO_API_KEY');
     
-    if (!theOddsApiKey) {
-      console.error('THE_ODDS_API_KEY is not configured');
+    if (!sportsdataApiKey) {
+      console.error('SPORTSDATA_IO_API_KEY is not configured');
       return new Response(JSON.stringify({ 
-        error: 'THE_ODDS_API_KEY is not configured. Please add it in Supabase secrets.'
+        error: 'SPORTSDATA_IO_API_KEY is not configured. Please add it in Supabase secrets.'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Call all The Odds API functions in parallel
-    console.log('Fetching data from The Odds API...');
+    console.log('Fetching data from SportsData IO...');
     
     const [scheduleResult, oddsResult, analyticsResult] = await Promise.allSettled([
-      supabase.functions.invoke('fetch-sports-schedule', { body: { sport: 'all' } }),
-      supabase.functions.invoke('fetch-live-odds'),
+      supabase.functions.invoke('fetch-sportsdata-schedule', { body: { sport: 'all' } }),
+      supabase.functions.invoke('fetch-sportsdata-odds', { body: { sport: 'NBA' } }),
       supabase.functions.invoke('populate-prop-analytics')
     ]);
 
@@ -50,7 +49,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true,
-      message: 'Live data populated successfully from The Odds API',
+      message: 'Live data populated successfully from SportsData IO',
       results
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -29,8 +29,8 @@ serve(async (req) => {
       stats: {},
     };
 
-    // 1. Call existing populate-live-data for The Odds API data
-    console.log('Fetching data from The Odds API...');
+    // 1. Call existing populate-live-data for SportsData IO data
+    console.log('Fetching data from SportsData IO...');
     const { data: liveData, error: liveError } = await supabase.functions.invoke('populate-live-data');
     
     if (liveError) {

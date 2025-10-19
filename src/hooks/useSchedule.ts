@@ -113,24 +113,12 @@ export const useSchedule = (sport: string, selectedDate?: Date) => {
 
   const refreshLiveScores = async () => {
     try {
-      console.log('Refreshing live scores from The Odds API...');
+      console.log('Refreshing live scores from SportsData IO...');
       setLoading(true);
       setError(null);
       
-      // Map sport to Odds API sport key
-      const sportKeyMap: Record<string, string> = {
-        'NBA': 'basketball_nba',
-        'NFL': 'americanfootball_nfl',
-        'MLB': 'baseball_mlb',
-        'NHL': 'icehockey_nhl',
-        'WNBA': 'basketball_wnba',
-        'all': 'basketball_nba'
-      };
-      
-      const sportKey = sportKeyMap[sport] || 'basketball_nba';
-      
-      const response = await supabase.functions.invoke('fetch-odds-api-scores', {
-        body: { sport: sportKey }
+      const response = await supabase.functions.invoke('fetch-sportsdata-schedule', {
+        body: { sport: sport }
       });
       
       if (response.error) {
@@ -142,7 +130,6 @@ export const useSchedule = (sport: string, selectedDate?: Date) => {
       
       console.log('Live scores refreshed successfully:', response.data);
       
-      // Wait a moment for data to be inserted, then refetch
       setTimeout(() => {
         fetchSchedule();
       }, 500);

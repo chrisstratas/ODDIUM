@@ -1,1 +1,49 @@
 project_id = "gmwdwxkfygppiavyysyv"
+
+[functions.analyze-edge-opportunities]
+verify_jwt = true
+
+[functions.analyze-parlay-image]
+verify_jwt = true
+
+[functions.external-factors-ai]
+verify_jwt = true
+
+[functions.fetch-livesport-scores]
+verify_jwt = false
+
+[functions.fetch-sportsdata-odds]
+verify_jwt = false
+
+[functions.fetch-sportsdata-players]
+verify_jwt = true
+
+[functions.fetch-sportsdata-projections]
+verify_jwt = false
+
+[functions.fetch-sportsdata-schedule]
+verify_jwt = false
+
+[functions.fetch-sportsdata-stats]
+verify_jwt = false
+
+[functions.fetch-thescore-data]
+verify_jwt = false
+
+[functions.get-prop-analytics]
+verify_jwt = false
+
+[functions.populate-all-sports-data]
+verify_jwt = false
+
+[functions.populate-live-data]
+verify_jwt = false
+
+[functions.populate-matchups]
+verify_jwt = false
+
+[functions.populate-prop-analytics]
+verify_jwt = false
+
+[functions.sports-insights-ai]
+verify_jwt = true
