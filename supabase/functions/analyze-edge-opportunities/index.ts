@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { edgeCategories } from './categories.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -22,7 +23,7 @@ serve(async (req) => {
     
     // Validate input
     const requestSchema = z.object({
-      category: z.enum(['player_props', 'arbitrage', 'derivative_markets']).optional(),
+      category: z.enum(['player_props', 'live_betting', 'college_sports', 'arbitrage', 'derivative_markets']).optional(),
       sport: z.enum(['NBA', 'NFL', 'MLB', 'NHL', 'WNBA', 'all']).default('all'),
       minEdge: z.number().min(0).max(100).default(0),
       minConfidence: z.number().min(0).max(100).default(50)
@@ -67,12 +68,35 @@ serve(async (req) => {
       console.error('Error fetching player stats:', statsError);
     }
 
+    // Get games schedule for live betting and college sports analysis
+    const { data: gamesSchedule, error: scheduleError } = await supabase
+      .from('games_schedule')
+      .select('*')
+      .order('game_date', { ascending: true })
+      .limit(50);
+
+    if (scheduleError) {
+      console.error('Error fetching games schedule:', scheduleError);
+    }
+
     const opportunities = [];
 
     // Analyze player props category
     if (!category || category === 'player_props') {
       const playerPropOpportunities = await analyzePlayerProps(liveOdds || [], propAnalytics || [], playerStats || []);
       opportunities.push(...playerPropOpportunities);
+    }
+
+    // Analyze live betting opportunities
+    if (!category || category === 'live_betting') {
+      const liveBettingOpportunities = await analyzeLiveBetting(gamesSchedule || [], liveOdds || [], playerStats || []);
+      opportunities.push(...liveBettingOpportunities);
+    }
+
+    // Analyze college sports opportunities
+    if (!category || category === 'college_sports') {
+      const collegeOpportunities = await analyzeCollegeSports(gamesSchedule || [], liveOdds || []);
+      opportunities.push(...collegeOpportunities);
     }
 
     // Analyze arbitrage opportunities
@@ -290,21 +314,125 @@ async function analyzeDerivativeMarkets(liveOdds: any[]) {
   return opportunities;
 }
 
+async function analyzeLiveBetting(gamesSchedule: any[], liveOdds: any[], playerStats: any[]) {
+  const opportunities = [];
+  
+  // Find games currently in progress or starting soon
+  const now = new Date();
+  const liveGames = gamesSchedule.filter(game => 
+    game.status === 'live' || game.status === 'in_progress'
+  );
+
+  for (const game of liveGames) {
+    // Look for rapid odds movements
+    const gameOdds = liveOdds.filter(odd => 
+      (odd.team === game.home_team || odd.team === game.away_team) &&
+      odd.sport === game.sport
+    );
+
+    if (gameOdds.length > 0) {
+      // Check for line movement
+      const recentOdd = gameOdds[0];
+      const lineMovement = recentOdd.line_movement;
+      
+      if (lineMovement && lineMovement !== 'stable') {
+        const edge = Math.abs(parseFloat(recentOdd.line) - (recentOdd.opening_line || recentOdd.line)) / recentOdd.line * 100;
+        
+        if (edge > 8) {
+          opportunities.push({
+            id: `live_${game.game_id}_${Date.now()}`,
+            category: 'live_betting',
+            title: `${game.home_team} vs ${game.away_team} - Live Line Movement`,
+            description: `Rapid line movement detected during live play. Act quickly before books adjust.`,
+            sport: game.sport,
+            edge: edge,
+            confidence: 75,
+            reasoning: `Books are adjusting to live game flow. ${lineMovement === 'up' ? 'Line moving up' : 'Line moving down'} suggests sharp action or game events.`,
+            urgency: 'high',
+            timeToAct: '2-5 minutes',
+            books: [...new Set(gameOdds.map(o => o.sportsbook))],
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+    }
+  }
+
+  return opportunities;
+}
+
+async function analyzeCollegeSports(gamesSchedule: any[], liveOdds: any[]) {
+  const opportunities = [];
+  
+  // Look for college games (can be identified by team names or a future column)
+  // For now, we'll look for non-primetime games and smaller matchups
+  const collegeGames = gamesSchedule.filter(game => {
+    const gameTime = new Date(game.game_time);
+    const hour = gameTime.getHours();
+    
+    // Non-primetime (before 6pm or after 11pm) likely to be college
+    // Or games without major network broadcast
+    return (hour < 18 || hour > 23) || !game.broadcast_network;
+  });
+
+  for (const game of collegeGames) {
+    const gameOdds = liveOdds.filter(odd => 
+      (odd.team === game.home_team || odd.team === game.away_team) &&
+      odd.sport === game.sport
+    );
+
+    if (gameOdds.length >= 2) {
+      // Compare variance between books (softer lines have more variance)
+      const lines = gameOdds.map(o => parseFloat(o.line));
+      const avgLine = lines.reduce((a, b) => a + b, 0) / lines.length;
+      const variance = lines.reduce((sum, line) => sum + Math.pow(line - avgLine, 2), 0) / lines.length;
+      
+      if (variance > 1.5) { // Higher variance = softer line
+        const edge = (Math.sqrt(variance) / avgLine) * 100;
+        
+        opportunities.push({
+          id: `college_${game.game_id}_${Date.now()}`,
+          category: 'college_sports',
+          title: `${game.home_team} vs ${game.away_team} - Soft Line Detected`,
+          description: `Non-primetime ${game.sport} game with significant book disagreement. Less scrutinized markets offer value.`,
+          sport: game.sport,
+          edge: edge,
+          confidence: 68,
+          reasoning: `Line variance of ${variance.toFixed(2)} suggests less sharp pricing on this ${game.sport} matchup. Books focus on primetime, creating opportunities in smaller games.`,
+          urgency: 'medium',
+          books: [...new Set(gameOdds.map(o => o.sportsbook))],
+          created_at: new Date().toISOString()
+        });
+      }
+    }
+  }
+
+  return opportunities;
+}
+
 async function enhanceWithAI(opportunities: any[], liveOdds: any[], playerStats: any[]) {
   if (!openAIApiKey) return opportunities;
 
   try {
-    const systemPrompt = `You are an expert sports betting analyst. Analyze the provided edge opportunities and enhance them with additional insights. For each opportunity, provide:
+    const categoryContext = JSON.stringify(edgeCategories, null, 2);
+    
+    const systemPrompt = `You are an expert sports betting analyst specializing in finding edges through these 5 proven strategies:
 
-1. Risk assessment
-2. Additional context (injuries, trends, etc.)
-3. Refined confidence score
-4. Action timeline
-5. Betting strategy recommendations
+${categoryContext}
 
-Return the enhanced opportunities in the same JSON format with added fields for risk_factors, additional_context, and betting_strategy.`;
+When analyzing opportunities, explicitly reference which category strategy applies and why it creates value based on the definitions above.
 
-    const userPrompt = `Analyze these ${opportunities.length} edge opportunities:
+For each opportunity, provide:
+1. Which category it belongs to and why (reference the category's "whyItWorks")
+2. Risk assessment specific to that category's characteristics
+3. Additional context relevant to that category (injuries, trends, market conditions)
+4. Refined confidence score based on category principles
+5. Action timeline based on category urgency
+6. Betting strategy using that category's approach (reference examples)
+
+Return the enhanced opportunities in the same JSON format with added fields for risk_factors, additional_context, betting_strategy, and category_reasoning.`;
+
+    const userPrompt = `Analyze these ${opportunities.length} edge opportunities using the 5 category framework:
 
 ${JSON.stringify(opportunities.slice(0, 5), null, 2)}
 
@@ -312,7 +440,7 @@ Additional context:
 - Total live odds tracked: ${liveOdds.length}
 - Recent player stats available: ${playerStats.length}
 
-Enhance each opportunity with professional betting insights.`;
+For each opportunity, explain how it fits the specific edge category and provide betting advice tailored to that category's strategy.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

@@ -250,7 +250,7 @@ const EdgeCategories: React.FC<EdgeCategoriesProps> = ({
 
                   {onCategorySelect && (
                     <Button 
-                      variant="outline" 
+                      variant="default" 
                       size="sm" 
                       className="w-full mt-3"
                       onClick={(e) => {
@@ -259,7 +259,7 @@ const EdgeCategories: React.FC<EdgeCategoriesProps> = ({
                       }}
                     >
                       <Target className="w-4 h-4 mr-2" />
-                      Find {category.title} Edges
+                      View {category.title} Opportunities
                     </Button>
                   )}
                 </div>

@@ -26,11 +26,11 @@ const Index = () => {
   const [selectedSport, setSelectedSport] = useState("NFL");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isPopulatingData, setIsPopulatingData] = useState(false);
-  const [inputValue, setInputValue] = useState("");
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(5 * 60 * 1000);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
+  const [activeTab, setActiveTab] = useState("opportunities");
   
   const { 
     opportunities, 
@@ -44,12 +44,6 @@ const Index = () => {
     minConfidence: 70
   });
 
-  const { messages, isLoading: aiLoading, sendMessage, clearMessages, updateContext } = useAIChat();
-
-  // Update AI context when sport/category changes
-  useState(() => {
-    updateContext({ sport: selectedSport, category: selectedCategory });
-  });
 
   const populateLiveData = async () => {
     setIsPopulatingData(true);
@@ -91,40 +85,14 @@ const Index = () => {
     refetchOpportunities();
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || aiLoading) return;
-    
-    const message = inputValue;
-    setInputValue("");
-    await sendMessage(message);
-  };
-
-  const quickActions = [
-    {
-      icon: Sparkles,
-      label: "Find edges",
-      message: "Show me the best edge opportunities right now"
-    },
-    {
-      icon: TrendingUp,
-      label: "Betting strategy",
-      message: "Suggest a betting strategy for today"
-    },
-    {
-      icon: LineChart,
-      label: "Analyze player",
-      message: "Analyze a specific player's performance"
-    },
-    {
-      icon: Database,
-      label: "Load data",
-      message: "Load fresh sports data"
-    }
+  const categoryFilters = [
+    { id: '', label: 'All Categories' },
+    { id: 'player_props', label: 'Player Props' },
+    { id: 'live_betting', label: 'Live Betting' },
+    { id: 'college_sports', label: 'College Sports' },
+    { id: 'arbitrage', label: 'Arbitrage' },
+    { id: 'derivative_markets', label: 'Derivatives' }
   ];
-
-  const handleQuickAction = (message: string) => {
-    sendMessage(message);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-main">
@@ -218,23 +186,14 @@ const Index = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="opportunities" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="opportunities" className="flex items-center gap-2">
               <Target className="w-4 h-4" />
               Edge Opportunities
               {opportunities.length > 0 && (
                 <Badge variant="secondary" className="ml-1">
                   {opportunities.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="ai-assistant" className="flex items-center gap-2">
-              <Bot className="w-4 h-4" />
-              AI Assistant
-              {messages.length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {messages.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -249,6 +208,25 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="opportunities" className="space-y-6">
+            {/* Category Filters */}
+            <div className="flex flex-wrap gap-2">
+              {categoryFilters.map((filter) => (
+                <Button
+                  key={filter.id}
+                  variant={selectedCategory === filter.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(filter.id)}
+                >
+                  {filter.label}
+                  {filter.id && opportunities.filter(o => o.category === filter.id).length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {opportunities.filter(o => o.category === filter.id).length}
+                    </Badge>
+                  )}
+                </Button>
+              ))}
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Card className="bg-gradient-card border-border">
@@ -256,6 +234,11 @@ const Index = () => {
                     <CardTitle className="flex items-center gap-2">
                       <Target className="w-5 h-5 text-primary" />
                       Current Edge Opportunities
+                      {selectedCategory && (
+                        <Badge variant="outline" className="ml-2">
+                          {categoryFilters.find(f => f.id === selectedCategory)?.label}
+                        </Badge>
+                      )}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
                       Live opportunities across all five edge categories, updated in real-time
@@ -310,131 +293,12 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="ai-assistant" className="space-y-6">
-            <Card className="bg-gradient-card border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="w-5 h-5 text-primary" />
-                  AI Edge Assistant
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Ask questions, analyze opportunities, and get personalized betting strategies
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Chat Messages */}
-                <ScrollArea className="h-[500px] pr-4">
-                  {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center gap-6 py-12">
-                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                        <Bot className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Hi! I'm your Edge Assistant</h3>
-                        <p className="text-sm text-muted-foreground mb-6 max-w-md">
-                          I can help you find betting edges, explain opportunities, suggest strategies, and load fresh data.
-                        </p>
-                      </div>
-
-                      {/* Quick Actions */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
-                        {quickActions.map((action) => (
-                          <Button
-                            key={action.label}
-                            variant="outline"
-                            className="h-auto flex flex-col gap-2 p-4"
-                            onClick={() => handleQuickAction(action.message)}
-                          >
-                            <action.icon className="w-5 h-5" />
-                            <span className="text-xs">{action.label}</span>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {messages.map((message, index) => (
-                        <AIMessageBubble
-                          key={index}
-                          role={message.role}
-                          content={message.content}
-                          timestamp={message.timestamp}
-                        />
-                      ))}
-                      {aiLoading && (
-                        <div className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                            <Bot className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <div className="bg-muted rounded-lg px-4 py-2">
-                            <div className="flex gap-1">
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" />
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-75" />
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-150" />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </ScrollArea>
-
-                {/* Input Area */}
-                <div className="space-y-3">
-                  {messages.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                      {quickActions.map((action) => (
-                        <Button
-                          key={action.label}
-                          variant="outline"
-                          size="sm"
-                          className="flex-shrink-0"
-                          onClick={() => handleQuickAction(action.message)}
-                          disabled={aiLoading}
-                        >
-                          <action.icon className="w-3 h-3 mr-1" />
-                          {action.label}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="flex gap-2">
-                    <Input
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Ask me anything about edges..."
-                      disabled={aiLoading}
-                      className="flex-1"
-                    />
-                    <Button 
-                      onClick={handleSendMessage} 
-                      disabled={aiLoading || !inputValue.trim()}
-                      size="icon"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  {messages.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearMessages}
-                      className="w-full"
-                    >
-                      Clear conversation
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="categories" className="space-y-6">
             <EdgeCategories 
-              onCategorySelect={setSelectedCategory}
+              onCategorySelect={(categoryId) => {
+                setSelectedCategory(categoryId);
+                setActiveTab("opportunities");
+              }}
               selectedCategory={selectedCategory}
             />
           </TabsContent>

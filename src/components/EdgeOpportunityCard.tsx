@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useAIChat } from '@/hooks/useAIChat';
+import { OpportunityAIChat } from './OpportunityAIChat';
 import { 
   Target, 
   Zap, 
@@ -41,11 +41,32 @@ const EdgeOpportunityCard: React.FC<EdgeOpportunityCardProps> = ({
   opportunity,
   onExplore
 }) => {
-  const { sendMessage } = useAIChat();
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
-  const handleAskAI = () => {
-    const message = `Explain this edge opportunity in detail: ${opportunity.title}. Category: ${getCategoryLabel(opportunity.category)}, Edge: ${opportunity.edge}%, Confidence: ${opportunity.confidence}%. ${opportunity.player ? `Player: ${opportunity.player}` : ''}`;
-    sendMessage(message);
+  const getCategoryData = (category: string) => {
+    const categories = {
+      player_props: {
+        title: 'Player Props',
+        whyItWorks: 'While books perfect their main game lines, they can\'t analyze every player prop with the same detail. You can use deeper stats to spot when lines don\'t match reality.'
+      },
+      live_betting: {
+        title: 'Live Betting',
+        whyItWorks: 'You\'re watching the game with human intuition while books rely on automated systems. When something big happens, you can often bet before their algorithms fully adjust.'
+      },
+      college_sports: {
+        title: 'College Sports',
+        whyItWorks: 'Every oddsmaker focuses on the big games everyone\'s watching. Meanwhile, that Tuesday night MAC basketball game? Much less scrutinized, much more opportunity.'
+      },
+      arbitrage: {
+        title: 'Line Shopping',
+        whyItWorks: 'Each sportsbook has different customers and uses different models. When they disagree enough, you can sometimes bet both sides and win either way.'
+      },
+      derivative_markets: {
+        title: 'Alternative Markets',
+        whyItWorks: 'Instead of analyzing each market separately, books often just split main game lines in half. But some teams play differently in first halves, or certain periods.'
+      }
+    };
+    return categories[category as keyof typeof categories] || categories.player_props;
   };
 
   const getCategoryIcon = (category: string) => {
@@ -182,12 +203,19 @@ const EdgeOpportunityCard: React.FC<EdgeOpportunityCardProps> = ({
           variant="outline" 
           size="sm" 
           className="w-full"
-          onClick={handleAskAI}
+          onClick={() => setAiChatOpen(true)}
         >
           <MessageSquare className="w-4 h-4 mr-2" />
           Ask AI About This Edge
         </Button>
       </CardContent>
+      
+      <OpportunityAIChat
+        opportunity={opportunity}
+        category={getCategoryData(opportunity.category)}
+        open={aiChatOpen}
+        onClose={() => setAiChatOpen(false)}
+      />
     </Card>
   );
 };
